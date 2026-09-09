@@ -12,14 +12,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js">
     </script>
     <style>
-        /* (All CSS unchanged – same as your original) */
-        /* ----- RESET & BASE (DARK BLUE THEME) ----- */
+        /* All CSS unchanged – same as original */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: 'Inter', -apple-system, system-ui, sans-serif;
             min-height: 100vh;
@@ -31,7 +29,6 @@
             position: relative;
             background: #000;
         }
-
         .hero-bg {
             position: fixed;
             top: 0;
@@ -41,7 +38,6 @@
             z-index: -1;
             overflow: hidden;
         }
-
         .hero-bg::before {
             content: "";
             position: absolute;
@@ -55,7 +51,6 @@
             filter: blur(14px) brightness(0.25) saturate(0.7);
             transform: scale(1.1);
         }
-
         .hero-bg::after {
             content: "";
             position: absolute;
@@ -65,8 +60,6 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.65);
         }
-
-        /* ----- HEADER (DARK GLASS) ----- */
         .header {
             position: fixed;
             top: 0;
@@ -82,13 +75,11 @@
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
-
         .header-left {
             display: flex;
             flex-direction: column;
             gap: 0;
         }
-
         .logo-text {
             font-size: 1.4rem;
             font-weight: 700;
@@ -99,7 +90,6 @@
         .logo-text .vc {
             color: #60a5fa;
         }
-
         .logo-sub {
             font-size: 0.55rem;
             color: rgba(255, 255, 255, 0.15);
@@ -110,13 +100,11 @@
         .logo-sub .highlight {
             color: rgba(255, 255, 255, 0.3);
         }
-
         .header-right {
             display: flex;
             align-items: center;
             gap: 0.8rem;
         }
-
         .hamburger {
             display: flex;
             flex-direction: column;
@@ -148,8 +136,6 @@
         .hamburger.active span:nth-child(3) {
             transform: rotate(-45deg) translate(5px, -5px);
         }
-
-        /* ----- SLIDE MENU PANEL (GLASS) ----- */
         .menu-panel {
             position: fixed;
             top: 0;
@@ -170,11 +156,9 @@
             color: #f1f5f9;
             border-left: 1px solid rgba(255, 255, 255, 0.04);
         }
-
         .menu-panel.open {
             right: 0;
         }
-
         .menu-panel .close-btn {
             align-self: flex-end;
             background: none;
@@ -188,24 +172,20 @@
         .menu-panel .close-btn:hover {
             color: #ffffff;
         }
-
         .menu-panel .panel-header {
             border-bottom: 1px solid rgba(255, 255, 255, 0.04);
             padding-bottom: 0.8rem;
             margin-bottom: 0.5rem;
         }
-
         .menu-panel .panel-header .panel-name {
             font-size: 1.1rem;
             font-weight: 700;
             color: #ffffff;
         }
-
         .menu-panel .panel-header .panel-email {
             font-size: 0.8rem;
             color: rgba(255, 255, 255, 0.15);
         }
-
         .menu-item {
             display: flex;
             align-items: center;
@@ -222,13 +202,11 @@
             font-family: inherit;
             font-size: 0.95rem;
         }
-
         .menu-item:hover {
             background: rgba(255, 255, 255, 0.06);
             color: #ffffff;
             transform: translateX(4px);
         }
-
         .menu-item .mi-icon {
             width: 32px;
             height: 32px;
@@ -237,7 +215,6 @@
             justify-content: center;
             flex-shrink: 0;
         }
-
         .menu-item .mi-icon svg {
             width: 22px;
             height: 22px;
@@ -247,11 +224,9 @@
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-
         .menu-item .mi-label {
             flex: 1;
         }
-
         .menu-item .mi-arrow {
             color: rgba(255, 255, 255, 0.15);
         }
@@ -264,14 +239,11 @@
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-
         .menu-divider {
             height: 1px;
             background: rgba(255, 255, 255, 0.04);
             margin: 0.2rem 0.8rem;
         }
-
-        /* ----- CONTAINER ----- */
         .container {
             max-width: 560px;
             margin: 0 auto;
@@ -279,30 +251,23 @@
             flex: 1;
             width: 100%;
         }
-
-        /* ----- PAGE HEADER ----- */
         .page-header {
             margin-bottom: 1rem;
             text-align: center;
         }
-
         .page-header h1 {
             font-size: 1.8rem;
             font-weight: 700;
             color: #ffffff;
         }
-
         .page-header h1 span {
             color: #60a5fa;
         }
-
         .page-header p {
             color: rgba(255, 255, 255, 0.25);
             font-size: 0.85rem;
             margin-top: 2px;
         }
-
-        /* ----- TOTAL EARNINGS BAR (GLASS) ----- */
         .total-bar {
             background: rgba(0, 0, 0, 0.45);
             backdrop-filter: blur(24px);
@@ -320,7 +285,6 @@
             position: relative;
             overflow: hidden;
         }
-
         .total-bar::before {
             content: '';
             position: absolute;
@@ -331,7 +295,6 @@
             background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 60%);
             pointer-events: none;
         }
-
         .total-left {
             display: flex;
             flex-direction: column;
@@ -339,20 +302,17 @@
             position: relative;
             z-index: 1;
         }
-
         .total-label {
             font-size: 0.7rem;
             color: rgba(255, 255, 255, 0.15);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
         .total-amount {
             font-size: 1.4rem;
             font-weight: 800;
             color: #facc15;
         }
-
         .claim-all-btn {
             padding: 0.5rem 1.2rem;
             border: none;
@@ -369,20 +329,16 @@
             position: relative;
             z-index: 1;
         }
-
         .claim-all-btn:disabled {
             opacity: 0.3;
             cursor: not-allowed;
             box-shadow: none;
             transform: none !important;
         }
-
         .claim-all-btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 8px 32px rgba(37, 99, 235, 0.25);
         }
-
-        /* ----- TABS (GLASS) ----- */
         .tabs {
             display: flex;
             gap: 0.4rem;
@@ -395,7 +351,6 @@
             padding: 0.3rem;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
         }
-
         .tab-btn {
             flex: 1;
             background: transparent;
@@ -410,18 +365,14 @@
             font-family: inherit;
             text-align: center;
         }
-
         .tab-btn.active {
             background: rgba(96, 165, 250, 0.06);
             color: #60a5fa;
             box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.04);
         }
-
         .tab-btn:hover:not(.active) {
             color: rgba(255, 255, 255, 0.4);
         }
-
-        /* ----- PLAN CARD (GLASS) ----- */
         .plan-card {
             background: rgba(0, 0, 0, 0.45);
             backdrop-filter: blur(24px);
@@ -434,7 +385,6 @@
             transition: all 0.3s ease;
             position: relative;
         }
-
         .plan-card::before {
             content: '';
             position: absolute;
@@ -445,13 +395,11 @@
             background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 60%);
             pointer-events: none;
         }
-
         .plan-card:hover {
             border-color: rgba(255, 255, 255, 0.08);
             transform: translateY(-3px);
             box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8);
         }
-
         .plan-card .plan-image {
             width: 100%;
             height: 160px;
@@ -459,20 +407,17 @@
             background: rgba(0, 0, 0, 0.25);
             display: block;
         }
-
         .plan-card .plan-body {
             padding: 1rem 1.2rem 1.2rem;
             position: relative;
             z-index: 1;
         }
-
         .plan-card .plan-name {
             font-size: 1.1rem;
             font-weight: 700;
             color: #ffffff;
             letter-spacing: -0.2px;
         }
-
         .plan-card .plan-meta {
             display: flex;
             gap: 0.8rem;
@@ -481,13 +426,11 @@
             flex-wrap: wrap;
             margin-top: 2px;
         }
-
         .plan-card .plan-meta span {
             display: flex;
             align-items: center;
             gap: 4px;
         }
-
         .plan-card .plan-meta svg {
             width: 14px;
             height: 14px;
@@ -497,7 +440,6 @@
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-
         .plan-card .claim-stats {
             display: flex;
             flex-wrap: wrap;
@@ -510,18 +452,15 @@
             font-size: 0.75rem;
             color: rgba(255, 255, 255, 0.15);
         }
-
         .plan-card .claim-stats .stat-item {
             display: flex;
             align-items: center;
             gap: 4px;
         }
-
         .plan-card .claim-stats .stat-item .num {
             font-weight: 700;
             color: #ffffff;
         }
-
         .plan-card .claim-stats .stat-item .num.gold {
             color: #facc15;
         }
@@ -531,7 +470,6 @@
         .plan-card .claim-stats .stat-item .num.green {
             color: #4ade80;
         }
-
         .plan-card .weekend-purchase-note {
             font-size: 0.65rem;
             color: #60a5fa;
@@ -542,7 +480,6 @@
             display: inline-block;
             margin: 0.2rem 0 0.4rem 0;
         }
-
         .plan-card .weekend-purchase-note svg {
             width: 12px;
             height: 12px;
@@ -552,11 +489,9 @@
             vertical-align: middle;
             margin-right: 4px;
         }
-
         .plan-card .claim-progress {
             margin: 0.6rem 0 0.8rem 0;
         }
-
         .plan-card .claim-progress .progress-track {
             width: 100%;
             height: 4px;
@@ -565,7 +500,6 @@
             overflow: hidden;
             margin-bottom: 0.3rem;
         }
-
         .plan-card .claim-progress .progress-fill {
             height: 100%;
             border-radius: 4px;
@@ -573,19 +507,16 @@
             width: 0%;
             transition: width 0.5s ease;
         }
-
         .plan-card .claim-progress .progress-label {
             display: flex;
             justify-content: space-between;
             font-size: 0.7rem;
             color: rgba(255, 255, 255, 0.15);
         }
-
         .plan-card .claim-progress .progress-label .earned {
             color: #60a5fa;
             font-weight: 600;
         }
-
         .plan-card .claim-action {
             display: flex;
             justify-content: space-between;
@@ -595,7 +526,6 @@
             padding-top: 0.8rem;
             border-top: 1px solid rgba(255, 255, 255, 0.04);
         }
-
         .plan-card .claim-status {
             font-size: 0.75rem;
             font-weight: 500;
@@ -605,18 +535,15 @@
             gap: 6px;
             flex-wrap: wrap;
         }
-
         .plan-card .claim-status .countdown {
             color: #fbbf24;
             font-weight: 700;
             font-variant-numeric: tabular-nums;
         }
-
         .plan-card .claim-status .ready-text {
             color: #4ade80;
             font-weight: 600;
         }
-
         .plan-card .claim-btn {
             padding: 0.4rem 1.2rem;
             border: none;
@@ -629,31 +556,26 @@
             background: rgba(255, 255, 255, 0.02);
             color: rgba(255, 255, 255, 0.15);
         }
-
         .plan-card .claim-btn.active {
             background: linear-gradient(135deg, #facc15, #f5a623);
             color: #0a0815;
             box-shadow: 0 4px 24px rgba(250, 204, 21, 0.15);
         }
-
         .plan-card .claim-btn.active:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 32px rgba(250, 204, 21, 0.25);
         }
-
         .plan-card .claim-btn:disabled {
             opacity: 0.3;
             cursor: not-allowed;
             transform: none !important;
         }
-
         .plan-card .weekend-note {
             font-size: 0.65rem;
             color: rgba(255, 255, 255, 0.06);
             margin-top: 0.3rem;
             text-align: right;
         }
-
         .plan-card .buy-plan-details {
             background: rgba(255, 255, 255, 0.02);
             border-radius: 12px;
@@ -661,7 +583,6 @@
             margin: 0.3rem 0 0.6rem 0;
             border: 1px solid rgba(255, 255, 255, 0.04);
         }
-
         .plan-card .buy-plan-details .detail-row {
             display: flex;
             justify-content: space-between;
@@ -669,7 +590,6 @@
             padding: 0.15rem 0;
             color: rgba(255, 255, 255, 0.15);
         }
-
         .plan-card .buy-plan-details .detail-row .label {
             color: rgba(255, 255, 255, 0.3);
         }
@@ -679,44 +599,35 @@
         .plan-card .buy-plan-details .detail-row .value.gold {
             color: #facc15;
         }
-
         .plan-card .buy-plan-details .detail-row .value.green {
             color: #4ade80;
         }
-
         .plan-card .claim-btn.buy-claim {
             background: linear-gradient(135deg, #10b981, #059669);
             color: #fff;
             box-shadow: 0 4px 24px rgba(16, 185, 129, 0.2);
         }
-
         .plan-card .claim-btn.buy-claim:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
         }
-
         .plan-card .claim-btn.buy-claim:disabled {
             background: rgba(255, 255, 255, 0.04);
             color: rgba(255, 255, 255, 0.15);
             box-shadow: none;
         }
-
         .plan-card .claim-btn.buy-claim.ready {
             background: linear-gradient(135deg, #facc15, #f5a623);
             color: #0a0815;
         }
-
         .plan-card .claim-btn.buy-claim.ready:hover:not(:disabled) {
             box-shadow: 0 8px 32px rgba(250, 204, 21, 0.3);
         }
-
-        /* ----- EMPTY STATE (GLASS) ----- */
         .empty-state {
             text-align: center;
             padding: 2.5rem 1rem;
             color: rgba(255, 255, 255, 0.15);
         }
-
         .empty-state svg {
             width: 48px;
             height: 48px;
@@ -725,20 +636,16 @@
             fill: none;
             margin-bottom: 0.8rem;
         }
-
         .empty-state .title {
             font-size: 1.1rem;
             font-weight: 600;
             color: rgba(255, 255, 255, 0.3);
         }
-
         .empty-state .sub {
             font-size: 0.85rem;
             color: rgba(255, 255, 255, 0.1);
             margin-top: 0.2rem;
         }
-
-        /* ----- BOTTOM NAV (DARK GLASS) – FIXED ORDER: HOME → INCOME → MARKET → TEAM → ME ----- */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -755,7 +662,6 @@
             z-index: 30;
             box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.3);
         }
-
         .nav-item {
             display: flex;
             flex-direction: column;
@@ -772,7 +678,6 @@
             font-family: inherit;
             color: rgba(255, 255, 255, 0.15);
         }
-
         .nav-item .nav-icon {
             width: 24px;
             height: 24px;
@@ -783,12 +688,10 @@
             stroke-linejoin: round;
             transition: all 0.3s;
         }
-
         .nav-item.active .nav-icon {
             stroke: #60a5fa;
             transform: scale(1.05);
         }
-
         .nav-item .nav-label {
             font-size: 0.45rem;
             font-weight: 600;
@@ -796,15 +699,12 @@
             transition: 0.3s;
             letter-spacing: 0.3px;
         }
-
         .nav-item.active .nav-label {
             color: #60a5fa;
         }
-
         .nav-item:hover .nav-icon {
             stroke: #60a5fa;
         }
-
         .nav-item.marketplace .nav-icon {
             width: 32px;
             height: 32px;
@@ -815,18 +715,14 @@
             stroke: #fff;
             margin-bottom: 2px;
         }
-
         .nav-item.marketplace.active .nav-icon {
             transform: scale(1.1);
             box-shadow: 0 0 30px rgba(37, 99, 235, 0.15);
         }
-
         .nav-item.marketplace .nav-label {
             color: #60a5fa;
             font-weight: 700;
         }
-
-        /* ----- TOAST (GLASS) ----- */
         .toast {
             position: fixed;
             bottom: 100px;
@@ -845,7 +741,6 @@
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.04);
         }
-
         .toast.error {
             border-color: rgba(239, 68, 68, 0.15);
             color: #fca5a5;
@@ -854,7 +749,6 @@
             border-color: rgba(74, 222, 128, 0.15);
             color: #6ee7b7;
         }
-
         @keyframes toastFade {
             0% {
                 opacity: 0;
@@ -872,8 +766,6 @@
                 transform: translateX(-50%) translateY(-20px) scale(0.95);
             }
         }
-
-        /* ----- RESPONSIVE ----- */
         @media (max-width: 500px) {
             .header {
                 padding: 0.6rem 1rem;
@@ -930,7 +822,6 @@
                 padding: 1.5rem;
             }
         }
-
         @media (max-width: 400px) {
             .total-bar {
                 flex-direction: column;
@@ -961,10 +852,8 @@
 </head>
 <body>
 
-    <!-- ===== FULL SCREEN BLURRED BACKGROUND ===== -->
     <div class="hero-bg"></div>
 
-    <!-- ===== HEADER ===== -->
     <header class="header">
         <div class="header-left">
             <a href="index.html" class="logo-text">Sajvera<span class="vc">Capital</span></a>
@@ -977,46 +866,38 @@
         </div>
     </header>
 
-    <!-- ===== SLIDE MENU PANEL (GLASS) ===== -->
     <div class="menu-panel" id="menuPanel">
         <button class="close-btn" id="closeMenu">✕</button>
         <div class="panel-header">
             <div class="panel-name" id="panelName">Loading...</div>
             <div class="panel-email" id="panelEmail">Loading...</div>
         </div>
-
         <button class="menu-item" onclick="window.location.href='dashboard.html'">
             <span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></span>
             <span class="mi-label">Dashboard</span>
             <span class="mi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
         </button>
-
         <button class="menu-item" onclick="window.location.href='chat.html'">
             <span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
             <span class="mi-label">Chat</span>
             <span class="mi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
         </button>
-
         <button class="menu-item" onclick="window.location.href='news.html'">
             <span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg></span>
             <span class="mi-label">News</span>
             <span class="mi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
         </button>
-
         <button class="menu-item" id="changePasswordBtn">
             <span class="mi-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
             <span class="mi-label">Change Password</span>
             <span class="mi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
         </button>
-
         <button class="menu-item" onclick="window.location.href='support.html'">
             <span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
             <span class="mi-label">Customer Service</span>
             <span class="mi-arrow"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
         </button>
-
         <div class="menu-divider"></div>
-
         <button class="menu-item" id="logoutBtn" style="color:#f87171;">
             <span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
             <span class="mi-label">Logout</span>
@@ -1024,16 +905,11 @@
         </button>
     </div>
 
-    <!-- ===== MAIN CONTENT ===== -->
     <main class="container">
-
-        <!-- Page Header -->
         <div class="page-header">
             <h1>💰 <span>Income</span></h1>
             <p>Your investments and Buy plans</p>
         </div>
-
-        <!-- Total Earnings Bar -->
         <div class="total-bar">
             <div class="total-left">
                 <span class="total-label">Pending Earnings</span>
@@ -1041,26 +917,18 @@
             </div>
             <button class="claim-all-btn" id="claimAllBtn" disabled>Claim All</button>
         </div>
-
-        <!-- Tabs -->
         <div class="tabs">
             <button class="tab-btn active" data-tab="active">📈 Active</button>
             <button class="tab-btn" data-tab="expired">⏰ Expired</button>
         </div>
-
-        <!-- Active Plans -->
         <div id="activeTab" class="tab-content">
             <div id="activePlansContainer"></div>
         </div>
-
-        <!-- Expired Plans -->
         <div id="expiredTab" class="tab-content" style="display:none;">
             <div id="expiredPlansContainer"></div>
         </div>
-
     </main>
 
-    <!-- ===== BOTTOM NAV (DARK GLASS) – ORDER: HOME → INCOME → MARKET → TEAM → ME ===== -->
     <div class="bottom-nav">
         <button class="nav-item" data-page="dashboard.html">
             <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -1200,7 +1068,7 @@
         var timerInterval = null;
         var userBlockListener = null;
         var planImageCache = {};
-        var allActivePlans = []; // combined array of invest and buy plans
+        var allActivePlans = [];
 
         window.addEventListener('beforeunload', function() {
             if (refreshInterval) clearInterval(refreshInterval);
@@ -1301,96 +1169,89 @@
         }
 
         // ================================================================
-        // GET CURRENT BUSINESS DAY INDEX (0-based)
+        // FIXED: GET LAST COMPLETED BUSINESS DAY INDEX
+        // Counts business days whose claim window has closed.
         // ================================================================
-        function getCurrentBusinessDayIndex(startDate, now, totalBusinessDays) {
+        function getLastCompletedBusinessDayIndex(startDate, now, totalBusinessDays) {
             if (totalBusinessDays <= 0) return 0;
-            // Count business days from startDate to now (excluding weekends)
-            var count = 0;
+            var completed = 0;
             var current = new Date(startDate);
             current.setHours(0, 0, 0, 0);
-            var today = new Date(now);
-            today.setHours(0, 0, 0, 0);
-            while (current <= today && count < totalBusinessDays) {
-                if (!isWeekend(current)) count++;
-                current.setDate(current.getDate() + 1);
+            // Move to first business day after start (claim day 1)
+            var dayIndex = 1;
+            var temp = new Date(startDate);
+            temp.setHours(0, 0, 0, 0);
+            // We'll iterate until we've processed totalBusinessDays or passed today
+            for (var i = 1; i <= totalBusinessDays; i++) {
+                // Get the date of this business day (i-th business day after start)
+                var dueDate = addBusinessDays(startDate, i);
+                dueDate.setHours(0, 0, 0, 0);
+                // Determine window end
+                var windowEnd = new Date(dueDate);
+                if (dueDate.getDay() === 5) { // Friday
+                    // Window ends on Saturday 23:59
+                    windowEnd.setDate(dueDate.getDate() + 1);
+                    windowEnd.setHours(23, 59, 59, 999);
+                } else {
+                    // Window ends on same day 23:59
+                    windowEnd.setHours(23, 59, 59, 999);
+                }
+                // If now is past window end, this day is completed
+                if (now > windowEnd) {
+                    completed = i;
+                } else {
+                    // If now is within or before window, we stop counting
+                    break;
+                }
             }
-            // If today is a weekend, we should not count it as a business day that can be claimed.
-            // But we only care about business days. If today is weekend, the count is the last business day.
-            // However, the claim windows are defined only on business days, so we need to consider that.
-            // Actually, we need the index of the current business day (if today is a business day) or the next business day.
-            // For simplicity, we'll use the count of business days passed so far (including today if it's a business day and not yet fully elapsed?).
-            // Better: We'll compute the index of the last business day that has fully passed.
-            // We'll use the logic: count business days from start to end of today (if today is a business day, count it; else not)
-            // Then subtract 1 if today's claim window hasn't started yet? But we'll handle that in claim status.
-            // We'll just return the number of business days that have started (including today if it's a business day)
-            // The claim status function will check if the current time is within the window for that index.
-            // So we want: count of business days that have occurred up to now (including today if it's a business day).
-            // If now is before the start of today's business day (e.g., before 00:00), we might count today as not yet started.
-            // But the claim window starts at the start of the business day (00:00). So we can use the date part.
-            // We'll count the number of business days from startDate to today (including today if it's a business day).
-            // Then we'll subtract 1 if today is a business day but the current time is before the claim window start? Actually the claim window starts at 00:00, so if it's a business day, the window is open from 00:00.
-            // So we can just count business days up to today inclusive.
-            // Let's do that.
-            var index = 0;
-            current = new Date(startDate);
-            current.setHours(0, 0, 0, 0);
-            while (current <= today && index < totalBusinessDays) {
-                if (!isWeekend(current)) index++;
-                current.setDate(current.getDate() + 1);
-            }
-            // index is the number of business days that have started (including today if it's a business day)
-            // However, if today is a weekend, index is the last business day count.
-            return index;
+            return Math.min(completed, totalBusinessDays);
         }
 
         // ================================================================
-        // AUTO-SYNC MISSED CLAIMS (advance claimsCount to current day index)
+        // FIXED: SYNC MISSED CLAIMS
         // ================================================================
         async function syncMissedClaims(plan) {
-            // plan is an investment object with id, startDate, businessDays, claimsCount, etc.
             var startDate = plan.startDate;
             if (!(startDate instanceof Date)) {
                 startDate = startDate.toDate ? startDate.toDate() : new Date(startDate);
             }
             var totalBusinessDays = plan.businessDays || plan.days || 0;
             var now = new Date();
-            var currentIndex = getCurrentBusinessDayIndex(startDate, now, totalBusinessDays);
-            // currentIndex is the number of business days that have started (including today if it's a business day)
-            // We need to cap at totalBusinessDays
-            if (currentIndex > totalBusinessDays) currentIndex = totalBusinessDays;
-            // If the plan is already expired (claimsCount >= totalBusinessDays), we don't need to update
             var claimsCount = plan.claimsCount || 0;
-            if (claimsCount < currentIndex) {
-                // We missed some days, update claimsCount to currentIndex
+
+            var completed = getLastCompletedBusinessDayIndex(startDate, now, totalBusinessDays);
+            // If claimsCount is behind completed, advance it (skip missed days)
+            if (claimsCount < completed) {
                 try {
                     await db.collection('investments').doc(plan.id).update({
-                        claimsCount: currentIndex,
+                        claimsCount: completed,
                         lastClaimed: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    plan.claimsCount = currentIndex;
-                    console.log(`Synced missed claims for plan ${plan.id}: claimsCount now ${currentIndex}`);
+                    plan.claimsCount = completed;
+                    console.log(`Synced missed claims for plan ${plan.id}: claimsCount now ${completed}`);
                 } catch (err) {
                     console.warn('Failed to sync missed claims:', err);
                 }
             }
-            // If the plan has expired (currentIndex >= totalBusinessDays), we can mark as completed
-            if (currentIndex >= totalBusinessDays && plan.status === 'active') {
-                try {
-                    await db.collection('investments').doc(plan.id).update({
-                        status: 'completed',
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    plan.status = 'completed';
-                } catch (err) {
-                    console.warn('Failed to mark plan as completed:', err);
+            // If all claims done, mark completed
+            if (claimsCount >= totalBusinessDays) {
+                if (plan.status === 'active') {
+                    try {
+                        await db.collection('investments').doc(plan.id).update({
+                            status: 'completed',
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        plan.status = 'completed';
+                    } catch (err) {
+                        console.warn('Failed to mark plan as completed:', err);
+                    }
                 }
             }
             return plan;
         }
 
         // ================================================================
-        // GET CLAIM STATUS (Invest Plans) – simplified using claimsCount
+        // FIXED: GET CLAIM STATUS – windows with Saturday extension for Friday
         // ================================================================
         function getClaimStatus(inv, now) {
             var start = inv.startDate;
@@ -1398,7 +1259,6 @@
             var dailyAmount = inv.dailyAmount;
             var totalBusinessDays = inv.businessDays;
 
-            // If all days claimed, done
             if (claimsCount >= totalBusinessDays) {
                 return {
                     available: false,
@@ -1407,72 +1267,64 @@
                     dailyAmount: dailyAmount,
                     earnedSoFar: 0,
                     hoursSince: 0,
-                    progress: 0,
+                    progress: 100,
                     index: -1,
                     status: 'done',
                     daysRemaining: 0
                 };
             }
 
-            // Compute claim date for current index
-            var dueDate = claimsCount === 0 ? start : addBusinessDays(start, claimsCount);
+            // Next claim day index (1-based)
+            var nextIndex = claimsCount + 1;
+            var dueDate = addBusinessDays(start, nextIndex);
             var claimStart = new Date(dueDate);
-            claimStart.setHours(start.getHours(), start.getMinutes(), start.getSeconds(), 0);
-            var windowEnd = new Date(claimStart.getTime() + 24 * 60 * 60 * 1000);
+            claimStart.setHours(0, 0, 0, 0);
 
-            // Check if now is in the window
-            if (now >= claimStart && now < windowEnd) {
-                var available = !isWeekend(now);
-                var hoursSince = Math.max(0, (now - claimStart) / (1000 * 60 * 60));
-                var earnedSoFar = Math.min(dailyAmount, dailyAmount * (hoursSince / 24));
-                var progress = Math.min(100, (hoursSince / 24) * 100);
-                var daysRemaining = totalBusinessDays - claimsCount;
-                return {
-                    available: available,
-                    nextClaimTime: claimStart,
-                    windowEnd: windowEnd,
-                    dailyAmount: dailyAmount,
-                    earnedSoFar: earnedSoFar,
-                    hoursSince: hoursSince,
-                    progress: progress,
-                    index: claimsCount,
-                    status: available ? 'ready' : 'waiting',
-                    daysRemaining: daysRemaining
-                };
-            } else if (now < claimStart) {
-                // Waiting for next window
-                var hoursRemaining = (claimStart - now) / (1000 * 60 * 60);
-                var daysRemaining = totalBusinessDays - claimsCount;
-                return {
-                    available: false,
-                    nextClaimTime: claimStart,
-                    windowEnd: windowEnd,
-                    dailyAmount: dailyAmount,
-                    earnedSoFar: 0,
-                    hoursSince: 0,
-                    progress: 0,
-                    index: claimsCount,
-                    status: 'waiting',
-                    hoursRemaining: hoursRemaining,
-                    daysRemaining: daysRemaining
-                };
+            // Window end: if dueDate is Friday, extend to Saturday 23:59; else same day 23:59
+            var windowEnd = new Date(dueDate);
+            if (dueDate.getDay() === 5) { // Friday
+                windowEnd.setDate(dueDate.getDate() + 1); // Saturday
+                windowEnd.setHours(23, 59, 59, 999);
             } else {
-                // Past window (should not happen if we auto-sync, but handle)
-                // This day is missed, but we have already synced, so this should be rare.
-                // We'll treat as unavailable.
-                return {
-                    available: false,
-                    nextClaimTime: claimStart,
-                    windowEnd: windowEnd,
-                    dailyAmount: dailyAmount,
-                    earnedSoFar: 0,
-                    hoursSince: 0,
-                    progress: 0,
-                    index: -1,
-                    status: 'waiting',
-                    daysRemaining: 0
-                };
+                windowEnd.setHours(23, 59, 59, 999);
             }
+
+            // Check availability
+            // Not available on Sunday
+            var isSunday = now.getDay() === 0;
+            var inWindow = (now >= claimStart && now <= windowEnd);
+            var available = inWindow && !isSunday;
+
+            var hoursSince = 0;
+            var earnedSoFar = 0;
+            var progress = 0;
+            if (inWindow) {
+                hoursSince = Math.max(0, (now - claimStart) / (1000 * 60 * 60));
+                earnedSoFar = Math.min(dailyAmount, dailyAmount * (hoursSince / 24));
+                progress = Math.min(100, (hoursSince / 24) * 100);
+            }
+
+            var daysRemaining = totalBusinessDays - claimsCount;
+
+            var statusText = '';
+            if (available) statusText = 'ready';
+            else if (isSunday) statusText = 'weekend'; // Sunday is closed
+            else if (now < claimStart) statusText = 'waiting';
+            else if (now > windowEnd) statusText = 'missed';
+
+            return {
+                available: available,
+                nextClaimTime: claimStart,
+                windowEnd: windowEnd,
+                dailyAmount: dailyAmount,
+                earnedSoFar: earnedSoFar,
+                hoursSince: hoursSince,
+                progress: progress,
+                index: nextIndex,
+                status: statusText,
+                daysRemaining: daysRemaining,
+                isSunday: isSunday
+            };
         }
 
         // ================================================================
@@ -1481,7 +1333,6 @@
         async function loadAllPlans() {
             if (!currentUserId) return;
             try {
-                // 1. Load Invest plans from "investments"
                 var invSnapshot = await db.collection('investments')
                     .where('userId', '==', currentUserId)
                     .get();
@@ -1490,20 +1341,17 @@
                 for (var doc of invSnapshot.docs) {
                     var data = doc.data();
                     data.id = doc.id;
-                    // Convert timestamps to Dates
                     if (data.startDate) data.startDate = data.startDate.toDate();
                     if (data.businessEndDate) data.businessEndDate = data.businessEndDate.toDate();
                     investPlans.push(data);
                 }
 
-                // 2. Auto-sync missed claims for each invest plan
                 for (var plan of investPlans) {
                     if (plan.status === 'active') {
                         await syncMissedClaims(plan);
                     }
                 }
 
-                // 3. Load Buy plans from "marketplacePurchases"
                 var buySnapshot = await db.collection('marketplacePurchases')
                     .where('userId', '==', currentUserId)
                     .where('type', '==', 'buy')
@@ -1516,7 +1364,6 @@
                     buyPlans.push({ id: doc.id, ...data, planType: 'buy' });
                 });
 
-                // Combine all plans
                 var allPlans = [...investPlans, ...buyPlans];
                 allPlans.sort(function(a, b) {
                     var aTime = (a.startDate || a.purchasedAt)?.toMillis ? (a.startDate || a.purchasedAt).toMillis() :
@@ -1526,7 +1373,6 @@
                     return bTime - aTime;
                 });
 
-                // Separate active and expired
                 var now = new Date();
                 var active = [];
                 var expired = [];
@@ -1560,7 +1406,7 @@
                         } else {
                             expired.push(investment);
                         }
-                    } else { // buy plan
+                    } else {
                         var expiryDate = plan.expiresAt ? plan.expiresAt.toDate() : null;
                         var isExpiredBuy = plan.status === 'claimed' || plan.status === 'expired' || (expiryDate && now >
                             expiryDate);
@@ -1598,7 +1444,7 @@
         }
 
         // ================================================================
-        // RENDER ACTIVE – updated for new claim status logic
+        // RENDER ACTIVE – using fixed claim status
         // ================================================================
         async function renderActive(plans) {
             var container = document.getElementById('activePlansContainer');
@@ -1609,7 +1455,6 @@
                 return;
             }
 
-            // Prepare images
             var imagePromises = plans.map(function(p) {
                 return fetchPlanImage(p.planName).catch(function() { return 'https://i.ibb.co/BKHsdj4B/IMG-20260525-114417.jpg'; });
             });
@@ -1622,9 +1467,8 @@
                 var img = images[i] || 'https://i.ibb.co/BKHsdj4B/IMG-20260525-114417.jpg';
                 if (plan.planType === 'invest') {
                     var status = getClaimStatus(plan, now);
-                    var canClaim = status.available && !isWeekend(now);
-                    var daysLeft = status.daysRemaining !== undefined ? status.daysRemaining : (plan.businessDays - (plan
-                        .claimsCount || 0));
+                    var canClaim = status.available;
+                    var daysLeft = status.daysRemaining;
                     var totalClaimed = (plan.claimsCount || 0) * plan.dailyAmount;
                     var claimsCount = plan.claimsCount || 0;
 
@@ -1632,17 +1476,34 @@
                     var countdownText = '';
                     if (canClaim) {
                         statusText = '✅ Ready to claim';
-                    } else if (status.status === 'waiting' && status.hoursRemaining !== undefined) {
-                        var hrs = Math.floor(status.hoursRemaining);
-                        var mins = Math.floor((status.hoursRemaining % 1) * 60);
-                        countdownText = hrs + 'h ' + mins + 'm';
-                        statusText = '⏳ Next claim in';
-                    } else if (isWeekend(now)) {
-                        statusText = '⏳ Weekends – claims resume Monday';
+                    } else if (status.isSunday) {
+                        statusText = '⏳ Sunday – no claims';
+                        // Show time until Monday 00:00
+                        var nextMonday = new Date(now);
+                        nextMonday.setDate(now.getDate() + ((8 - now.getDay()) % 7));
+                        nextMonday.setHours(0, 0, 0, 0);
+                        var diffMs = nextMonday - now;
+                        if (diffMs > 0) {
+                            var hrs = Math.floor(diffMs / (1000 * 60 * 60));
+                            var mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                            countdownText = hrs + 'h ' + mins + 'm';
+                        }
+                    } else if (status.status === 'waiting') {
+                        var diff = status.nextClaimTime - now;
+                        if (diff > 0) {
+                            var hrs = Math.floor(diff / (1000 * 60 * 60));
+                            var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                            countdownText = hrs + 'h ' + mins + 'm';
+                            statusText = '⏳ Next claim in';
+                        } else {
+                            statusText = '⏳ Processing...';
+                        }
                     } else if (status.status === 'done') {
                         statusText = '✅ All claims completed';
+                    } else if (status.status === 'missed') {
+                        statusText = '⏳ Missed – will sync automatically';
                     } else {
-                        statusText = '⏳ Waiting for next window';
+                        statusText = '⏳ Waiting...';
                     }
 
                     var progress = status.progress || 0;
@@ -1661,11 +1522,10 @@
 
                     var weekendNoteHtml = '';
                     if (isWeekendPurchase && plan.claimsCount === 0) {
-                        var claimTimeStr = plan.startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
                         weekendNoteHtml = `
                             <div class="weekend-purchase-note">
                                 <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                📅 Weekend purchase – first claim available from ${claimTimeStr} on weekdays
+                                📅 Weekend purchase – first claim available from the next business day at 00:00
                             </div>
                         `;
                     }
@@ -1704,15 +1564,15 @@
                                         ${canClaim ? '<span class="ready-text">● Ready</span>' : ''}
                                     </div>
                                     <button class="claim-btn ${canClaim ? 'active' : ''}" ${canClaim ? '' : 'disabled'} data-id="${plan.id}" data-daily="${dailyDisplay}">
-                                        ${canClaim ? '💰 Claim' : (isWeekend(now) ? '⏳ Weekend' : '⏳ Wait')}
+                                        ${canClaim ? '💰 Claim' : (status.isSunday ? '⏳ Sunday' : '⏳ Wait')}
                                     </button>
                                 </div>
-                                ${isWeekend(now) ? '<div class="weekend-note">⛔ Claims resume Monday</div>' : ''}
+                                ${status.isSunday ? '<div class="weekend-note">⛔ No claims on Sunday – resumes Monday at 00:00</div>' : ''}
                             </div>
                         </div>
                     `;
                 } else {
-                    // Render Buy Plan (unchanged)
+                    // Buy plan – unchanged
                     var expiryDate = plan.expiryDate;
                     var isExpired = plan.status === 'claimed' || (expiryDate && now > expiryDate);
                     var isReady = !isExpired && expiryDate && now >= expiryDate && plan.status !== 'claimed';
@@ -1773,7 +1633,6 @@
 
             container.innerHTML = html;
 
-            // Attach events for Invest claims
             document.querySelectorAll('.claim-btn.active:not(.buy-claim)').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -1784,7 +1643,6 @@
                 });
             });
 
-            // Attach events for Buy claims
             document.querySelectorAll('.claim-btn.buy-claim.ready').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -1902,7 +1760,7 @@
                 var plan = plans[i];
                 if (plan.planType === 'invest') {
                     var status = getClaimStatus(plan, now);
-                    if (status.available && !isWeekend(now)) {
+                    if (status.available) {
                         total += status.dailyAmount;
                         hasClaimable = true;
                     }
@@ -1913,22 +1771,17 @@
 
             var claimAllBtn = document.getElementById('claimAllBtn');
             if (claimAllBtn) {
-                claimAllBtn.disabled = isWeekend(now) || !hasClaimable;
+                claimAllBtn.disabled = !hasClaimable;
             }
         }
 
         // ================================================================
-        // CLAIM DAILY INCOME (Invest) – UPDATES ONLY walletBalance
+        // CLAIM DAILY INCOME (Invest)
         // ================================================================
         async function claimDailyIncome(investmentId, dailyAmount, refreshAfter, btnElement) {
             var user = auth.currentUser;
             if (!user) return false;
             var now = new Date();
-            if (isWeekend(now)) {
-                showToast('❌ Daily income can only be claimed on weekdays (Monday–Friday).', true);
-                if (btnElement) btnElement.disabled = false;
-                return false;
-            }
 
             try {
                 await db.runTransaction(async function(transaction) {
@@ -1953,7 +1806,6 @@
 
                     var userRef = db.collection('users').doc(user.uid);
 
-                    // Update ONLY walletBalance
                     transaction.update(userRef, {
                         walletBalance: firebase.firestore.FieldValue.increment(dailyAmount)
                     });
@@ -2082,17 +1934,13 @@
             var user = auth.currentUser;
             if (!user) return;
             var now = new Date();
-            if (isWeekend(now)) {
-                showToast('❌ Daily income can only be claimed on weekdays (Monday–Friday).', true);
-                return;
-            }
 
             var claimable = [];
             for (var i = 0; i < allActivePlans.length; i++) {
                 var plan = allActivePlans[i];
                 if (plan.planType === 'invest') {
                     var status = getClaimStatus(plan, now);
-                    if (status.available && !isWeekend(now)) {
+                    if (status.available) {
                         claimable.push({ id: plan.id, dailyAmount: status.dailyAmount });
                     }
                 }
@@ -2188,9 +2036,9 @@
             });
         });
 
-        console.log('✅ income.html – Fixed missed day claims.');
-        console.log('ℹ️ Missed days are automatically skipped without credit.');
-        console.log('ℹ️ Plans expire after all business days are passed.');
+        console.log('✅ Fixed: Friday claims extend to Saturday, Sunday is not claimable.');
+        console.log('✅ Missed days are automatically skipped.');
+        console.log('✅ Weekend purchases start claims on the next business day at 00:00.');
     </script>
 
 </body>
