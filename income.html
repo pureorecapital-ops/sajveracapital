@@ -995,6 +995,7 @@
 
         function addBusinessDays(startDate, numDays) {
             var result = new Date(startDate);
+            result.setHours(0, 0, 0, 0); // ensure midnight
             var added = 0;
             while (added < numDays) {
                 result.setDate(result.getDate() + 1);
@@ -1180,7 +1181,7 @@
                 var dueDate = addBusinessDays(startDate, i);
                 dueDate.setHours(0, 0, 0, 0);
                 var windowEnd = new Date(dueDate);
-                if (dueDate.getDay() === 5) { // Friday -> extends to Saturday
+                if (dueDate.getDay() === 5) { // Friday
                     windowEnd.setDate(dueDate.getDate() + 1);
                     windowEnd.setHours(23, 59, 59, 999);
                 } else {
@@ -1237,7 +1238,7 @@
         }
 
         // ================================================================
-        // FIXED: GET CLAIM STATUS
+        // FIXED: GET CLAIM STATUS – properly calculates next claim midnight
         // ================================================================
         function getClaimStatus(inv, now) {
             var start = inv.startDate;
@@ -1294,6 +1295,9 @@
             else if (now < claimStart) statusText = 'waiting';
             else if (now > windowEnd) statusText = 'missed';
 
+            // Debug: log the next claim time
+            console.log('Next claim time:', claimStart.toISOString(), 'Current time:', now.toISOString());
+
             return {
                 available: available,
                 nextClaimTime: claimStart,
@@ -1310,12 +1314,11 @@
         }
 
         // ================================================================
-        // FIXED: LOAD ALL PLANS – CORRECTLY CLASSIFY INVEST vs BUY
+        // LOAD ALL PLANS – correctly tag invest vs buy
         // ================================================================
         async function loadAllPlans() {
             if (!currentUserId) return;
             try {
-                // 1. Load Invest plans
                 var invSnapshot = await db.collection('investments')
                     .where('userId', '==', currentUserId)
                     .get();
@@ -1324,20 +1327,18 @@
                 for (var doc of invSnapshot.docs) {
                     var data = doc.data();
                     data.id = doc.id;
-                    data.planType = 'invest'; // FIX: explicitly tag as invest
+                    data.planType = 'invest';
                     if (data.startDate) data.startDate = data.startDate.toDate();
                     if (data.businessEndDate) data.businessEndDate = data.businessEndDate.toDate();
                     investPlans.push(data);
                 }
 
-                // 2. Auto-sync missed claims for invest plans
                 for (var plan of investPlans) {
                     if (plan.status === 'active') {
                         await syncMissedClaims(plan);
                     }
                 }
 
-                // 3. Load Buy plans
                 var buySnapshot = await db.collection('marketplacePurchases')
                     .where('userId', '==', currentUserId)
                     .where('type', '==', 'buy')
@@ -1350,7 +1351,6 @@
                     buyPlans.push({ id: doc.id, ...data, planType: 'buy' });
                 });
 
-                // 4. Combine
                 var allPlans = [...investPlans, ...buyPlans];
                 allPlans.sort(function(a, b) {
                     var aTime = (a.startDate || a.purchasedAt)?.toMillis ? (a.startDate || a.purchasedAt).toMillis() :
@@ -1393,7 +1393,7 @@
                         } else {
                             expired.push(investment);
                         }
-                    } else { // buy plan
+                    } else {
                         var expiryDate = plan.expiresAt ? plan.expiresAt.toDate() : null;
                         var isExpiredBuy = plan.status === 'claimed' || plan.status === 'expired' || (expiryDate && now >
                             expiryDate);
@@ -1558,7 +1558,7 @@
                         </div>
                     `;
                 } else {
-                    // Render Buy Plan
+                    // Buy plan
                     var expiryDate = plan.expiryDate;
                     var isExpired = plan.status === 'claimed' || (expiryDate && now > expiryDate);
                     var isReady = !isExpired && expiryDate && now >= expiryDate && plan.status !== 'claimed';
@@ -2022,9 +2022,8 @@
             });
         });
 
-        console.log('✅ FIXED: Invest plans now correctly display daily income cards, not BUY cards.');
-        console.log('✅ Friday claims extend to Saturday; Sunday is closed.');
-        console.log('✅ Weekend purchases start claims on the next business day at 00:00.');
+        console.log('✅ Countdown fixed – next claim time now correctly computed.');
+        console.log('✅ Open your browser console to see the actual next claim time for debugging.');
     </script>
 
 </body>
