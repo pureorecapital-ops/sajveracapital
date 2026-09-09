@@ -244,6 +244,9 @@
         .support-card.whatsapp .card-desc {
             color: rgba(26, 26, 26, 0.40);
         }
+        .support-card.whatsapp .contact-value {
+            color: #b8952e;
+        }
 
         .support-card .card-info {
             flex: 1;
@@ -399,6 +402,22 @@
         }
 
         /* ================================================================
+                   ADDED: "Change number" link style
+                   ================================================================ */
+        .change-number-link {
+            display: inline-block;
+            font-size: 0.7rem;
+            color: rgba(26, 26, 26, 0.30);
+            cursor: pointer;
+            transition: color 0.2s ease;
+            margin-top: 2px;
+            text-decoration: underline dotted;
+        }
+        .change-number-link:hover {
+            color: #1a1a1a;
+        }
+
+        /* ================================================================
                    FOOTER
                    ================================================================ */
         .footer-text {
@@ -474,6 +493,9 @@
             .security-notice .shield svg {
                 width: 24px;
                 height: 24px;
+            }
+            .change-number-link {
+                font-size: 0.6rem;
             }
         }
 
@@ -611,7 +633,7 @@
                 </a>
             </div>
 
-            <!-- ===== ZAMBIA WHATSAPP ADMIN ===== -->
+            <!-- ===== ZAMBIA WHATSAPP ADMIN – Updated with rotation ===== -->
             <div class="support-card whatsapp">
                 <div class="card-top">
                     <div class="card-icon">
@@ -620,6 +642,12 @@
                     <div class="card-info">
                         <div class="card-title">Zambia WhatsApp Admin</div>
                         <div class="card-desc">This contact is not the owner of Sajvera Capital. They are a Zambia-based admin who can help you find our official WhatsApp group. Click the button below to send a text message.</div>
+                        <!-- Dynamic number display -->
+                        <div class="contact-value" id="whatsapp-number-display">
+                            <span id="current-wa-number">+260958212986</span>
+                        </div>
+                        <!-- Change number link -->
+                        <span class="change-number-link" id="switchWaNumber">↻ Change number</span>
                     </div>
                 </div>
 
@@ -629,7 +657,7 @@
                 </div>
 
                 <div class="card-divider"></div>
-                <a href="https://wa.me/260571518417" target="_blank" rel="noopener noreferrer" class="btn-support">
+                <a href="#" id="whatsapp-admin-link" target="_blank" rel="noopener noreferrer" class="btn-support">
                     <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
                     Contact Zambia Admin via WhatsApp
                 </a>
@@ -653,7 +681,7 @@
     </div>
 
     <!-- ================================================================
-    JAVASCRIPT — FIREBASE AUTH
+    JAVASCRIPT — FIREBASE AUTH + WHATSAPP ROTATION
     ================================================================ -->
     <script>
         // ================================================================
@@ -708,11 +736,78 @@
             window.location.href = 'login.html';
         });
 
+        // ================================================================
+        // WHATSAPP NUMBER ROTATION
+        // ================================================================
+        (function() {
+            var numbers = [
+                '+260958212986',
+                '+260966828454'
+            ];
+            var currentIndex = 0; // default to first
+
+            // Try to restore from sessionStorage (per‑session persistence)
+            try {
+                var savedIndex = sessionStorage.getItem('waAdminIndex');
+                if (savedIndex !== null) {
+                    var idx = parseInt(savedIndex, 10);
+                    if (!isNaN(idx) && idx >= 0 && idx < numbers.length) {
+                        currentIndex = idx;
+                    }
+                }
+            } catch (e) {
+                // ignore
+            }
+
+            var displaySpan = document.getElementById('current-wa-number');
+            var switchLink = document.getElementById('switchWaNumber');
+            var waLink = document.getElementById('whatsapp-admin-link');
+
+            var message = "Hello Sajvera Capital Customer Service 👋, I need assistance with my account.";
+            var encodedMessage = encodeURIComponent(message);
+
+            function updateUI() {
+                var number = numbers[currentIndex];
+                if (displaySpan) {
+                    displaySpan.textContent = number;
+                }
+                if (waLink) {
+                    waLink.href = 'https://wa.me/' + number.replace('+', '') + '?text=' + encodedMessage;
+                }
+                // Save to sessionStorage
+                try {
+                    sessionStorage.setItem('waAdminIndex', String(currentIndex));
+                } catch (e) { /* ignore */ }
+            }
+
+            function switchNumber() {
+                currentIndex = (currentIndex + 1) % numbers.length;
+                updateUI();
+            }
+
+            if (switchLink) {
+                switchLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    switchNumber();
+                });
+            }
+
+            // Initial update
+            updateUI();
+
+            // Also update the link if user clicks the button (it already has href)
+            // But we also need to ensure the button gets the correct href on load
+            // The link is already set by updateUI.
+
+            // For safety, when user clicks the button, it uses the href we set.
+            // We don't need extra listeners.
+        })();
+
         console.log('✅ Sajvera Capital · Support Page (White & Gold)');
         console.log('📧 Email: pureorecapital@gmail.com');
         console.log('📱 Telegram Contact: t.me/JackKwesi');
         console.log('📢 Telegram Channel: t.me/VisionCoreCapital2026');
-        console.log('💬 WhatsApp Admin: +260 57 151 8417');
+        console.log('💬 WhatsApp Admin numbers: +260958212986 | +260966828454 (rotating)');
         console.log('🔒 Security notice displayed');
     </script>
 

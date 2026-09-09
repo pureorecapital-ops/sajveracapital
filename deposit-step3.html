@@ -886,7 +886,7 @@
         // Fallback hardcoded agents (Zamtel removed – "Coming soon" will be shown)
         var hardcodedAgents = {
             mtn: [
-                { number: '0960338304', name: 'Getrude Sompo' },
+                { number: '0967340042', name: 'Jeremiah ilunga' },
                 { number: '0963070992', name: 'John Kabwe' }
             ],
             airtel: [
@@ -1240,6 +1240,7 @@
         console.log('🔄 Agents loaded from Firestore (systemSettings/depositAgents)');
         console.log('📋 Deposit rules loaded from Firestore (systemSettings/depositRules)');
         console.log('🔹 Fallback hardcoded agents (Zamtel removed → Coming Soon)');
+        console.log('🔹 MTN agents updated: removed 0960338304 Getrude Sompo, added 0967340042 Jeremiah ilunga');
         console.log('✅ Fully integrated with admin dashboard configuration');
         console.log('✅ Rules: AmountMatch=' + depositRules.requireAmountMatch + ', AgentName=' + depositRules
             .requireAgentName + ', NetworkKeyword=' + depositRules.requireNetworkKeyword + ', TxKeyword=' + depositRules
