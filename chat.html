@@ -9,786 +9,205 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
-        /* ============================================================
-           THEME TOKENS — Premium Black / Dark Green / Emerald / Gold
-           ============================================================ */
         :root {
-            --bg-black: #030604;
-
-            --emerald-200: #a7f3d0;
-            --emerald-300: #6ee7b7;
-            --emerald-400: #34d399;
-            --emerald-500: #10b981;
-            --emerald-600: #059669;
-            --emerald-700: #047857;
-
-            --gold-200: #fff3cf;
-            --gold-300: #ffe9a3;
-            --gold-400: #f7d774;
-            --gold-500: #f5c542;
-
-            /* Preserved purple/blue brand symbol */
-            --brand-violet: #7c6df0;
-            --brand-cyan: #5dd9f2;
-
-            --text: #ffffff;
-            --muted: rgba(255, 255, 255, 0.62);
-            --faint: rgba(255, 255, 255, 0.42);
+            --emerald-200: #a7f3d0; --emerald-300: #6ee7b7; --emerald-400: #34d399;
+            --emerald-500: #10b981; --emerald-600: #059669; --emerald-700: #047857;
+            --gold-200: #fff3cf; --gold-300: #ffe9a3; --gold-400: #f7d774; --gold-500: #f5c542;
+            --brand-violet: #7c6df0; --brand-cyan: #5dd9f2;
+            --text: #ffffff; --muted: rgba(255,255,255,0.62); --faint: rgba(255,255,255,0.42);
         }
-
-        /* ============================================================
-           RESET & BASE
-           ============================================================ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html,
-        body {
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html, body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            height: 100%;
-            color: var(--text);
-            background-color: #030604;
-            overflow: hidden;
-            -webkit-font-smoothing: antialiased;
-            -webkit-text-size-adjust: 100%;
+            height: 100%; color: var(--text); background-color: #030604;
+            overflow: hidden; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
         }
-
         body {
             background-image:
-                radial-gradient(700px 420px at 50% -10%, rgba(14, 58, 40, 0.7) 0%, rgba(3, 6, 4, 0) 68%),
-                radial-gradient(560px 400px at 100% 110%, rgba(16, 185, 129, 0.08) 0%, rgba(3, 6, 4, 0) 62%),
+                radial-gradient(700px 420px at 50% -10%, rgba(14,58,40,0.7) 0%, rgba(3,6,4,0) 68%),
+                radial-gradient(560px 400px at 100% 110%, rgba(16,185,129,0.08) 0%, rgba(3,6,4,0) 62%),
                 linear-gradient(180deg, #05130d 0%, #030a07 55%, #020504 100%);
-            background-repeat: no-repeat;
-            background-size: 100% 100%;
+            background-repeat: no-repeat; background-size: 100% 100%;
         }
-
-        /* ============================================================
-           AI AVATAR — reusable component
-           Purple/blue circular symbol preserved inside a dark green/
-           black frame with emerald accents and a soft green glow.
-           ============================================================ */
         .ai-avatar {
-            flex-shrink: 0;
-            border-radius: 50%;
+            flex-shrink: 0; border-radius: 50%;
             background: radial-gradient(circle at 50% 40%, #0a2a1d 0%, #030a07 100%);
-            border: 2px solid rgba(16, 185, 129, 0.55);
-            padding: 3px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow:
-                0 0 16px -3px rgba(16, 185, 129, 0.75),
-                0 0 30px -10px rgba(16, 185, 129, 0.55),
-                inset 0 0 8px rgba(16, 185, 129, 0.20);
+            border: 2px solid rgba(16,185,129,0.55); padding: 3px;
+            display: inline-flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 16px -3px rgba(16,185,129,0.75), 0 0 30px -10px rgba(16,185,129,0.55),
+                        inset 0 0 8px rgba(16,185,129,0.20);
         }
-
         .ai-avatar .avatar-symbol {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
+            width: 100%; height: 100%; border-radius: 50%;
             background: linear-gradient(135deg, var(--brand-violet) 0%, var(--brand-cyan) 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.35),
-                inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.15);
         }
-
         .ai-avatar .avatar-symbol svg {
-            width: 58%;
-            height: 58%;
-            stroke: #ffffff;
-            stroke-width: 2.4;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+            width: 58%; height: 58%; stroke: #fff; stroke-width: 2.4; fill: none;
+            stroke-linecap: round; stroke-linejoin: round;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
         }
-
-        /* ============================================================
-           LAYOUT
-           ============================================================ */
         .container {
-            max-width: 640px;
-            margin: 0 auto;
-            padding: 12px 12px 12px;
-            height: 100vh;
-            height: 100dvh;
-            display: flex;
-            flex-direction: column;
-            position: relative;
+            max-width: 640px; margin: 0 auto; padding: 12px;
+            height: 100vh; height: 100dvh;
+            display: flex; flex-direction: column; position: relative;
         }
-
-        /* ============================================================
-           HEADER
-           ============================================================ */
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            flex-shrink: 0;
-            margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 10px; flex-shrink: 0; margin-bottom: 10px;
         }
-
         .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(16, 185, 129, 0.08);
-            border: 1px solid rgba(16, 185, 129, 0.25);
-            border-radius: 999px;
-            padding: 8px 14px 8px 11px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #c9f7e4;
-            cursor: pointer;
-            font-family: inherit;
-            text-decoration: none;
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25);
+            border-radius: 999px; padding: 8px 14px 8px 11px;
+            font-size: 0.8rem; font-weight: 600; color: #c9f7e4; cursor: pointer;
+            font-family: inherit; text-decoration: none;
             transition: background 0.2s, border-color 0.2s, transform 0.2s;
         }
-
-        .back-btn:hover {
-            background: rgba(16, 185, 129, 0.16);
-            border-color: rgba(16, 185, 129, 0.5);
-            transform: translateX(-3px);
-        }
-
-        .back-btn svg {
-            width: 16px;
-            height: 16px;
-            stroke: currentColor;
-            stroke-width: 2.4;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .assistant-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 0;
-        }
-
-        /* Header avatar — larger scale of the reusable component */
-        .assistant-avatar {
-            width: 44px;
-            height: 44px;
-        }
-
-        .assistant-meta {
-            min-width: 0;
-        }
-
-        .assistant-name {
-            font-size: 0.92rem;
-            font-weight: 800;
-            letter-spacing: -0.01em;
-            color: #ffffff;
-            white-space: nowrap;
-        }
-
+        .back-btn:hover { background: rgba(16,185,129,0.16); border-color: rgba(16,185,129,0.5); transform: translateX(-3px); }
+        .back-btn svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        .assistant-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .assistant-avatar { width: 44px; height: 44px; }
+        .assistant-meta { min-width: 0; }
+        .assistant-name { font-size: 0.92rem; font-weight: 800; letter-spacing: -0.01em; color: #fff; white-space: nowrap; }
         .assistant-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 2px;
-            font-size: 0.62rem;
-            font-weight: 800;
-            letter-spacing: 0.12em;
-            color: var(--emerald-300);
-            text-transform: uppercase;
-            white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 6px; margin-top: 2px;
+            font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em;
+            color: var(--emerald-300); text-transform: uppercase; white-space: nowrap;
         }
-
-        .status-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #22c55e;
-            box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
-            animation: statusPulse 2s infinite;
-        }
-
-        @keyframes statusPulse {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
-            70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-        }
-
-        /* ============================================================
-           CHAT BOX
-           ============================================================ */
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,0.9); animation: statusPulse 2s infinite; }
+        @keyframes statusPulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.55); } 70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
         .chat-box {
-            flex: 1 1 auto;
-            overflow-y: auto;
-            overflow-x: hidden;
-            padding: 6px 2px 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            min-height: 0;
-            -webkit-overflow-scrolling: touch;
-            scroll-behavior: auto;
+            flex: 1 1 auto; overflow-y: auto; overflow-x: hidden;
+            padding: 6px 2px 12px; display: flex; flex-direction: column; gap: 10px;
+            min-height: 0; -webkit-overflow-scrolling: touch; scroll-behavior: auto;
         }
-
-        .chat-box::-webkit-scrollbar {
-            width: 4px;
-        }
-        .chat-box::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .chat-box::-webkit-scrollbar-thumb {
-            background: rgba(16, 185, 129, 0.25);
-            border-radius: 10px;
-        }
-
-        /* ============================================================
-           MESSAGES
-           ============================================================ */
+        .chat-box::-webkit-scrollbar { width: 4px; }
+        .chat-box::-webkit-scrollbar-track { background: transparent; }
+        .chat-box::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.25); border-radius: 10px; }
         .message {
-            max-width: 86%;
-            padding: 11px 14px;
-            border-radius: 16px;
-            word-wrap: break-word;
-            line-height: 1.6;
-            font-size: 0.9rem;
-            animation: msgFadeIn 0.28s ease;
-            display: flex;
-            align-items: flex-start;
-            gap: 9px;
-            position: relative;
+            max-width: 86%; padding: 11px 14px; border-radius: 16px;
+            word-wrap: break-word; line-height: 1.6; font-size: 0.9rem;
+            animation: msgFadeIn 0.28s ease; display: flex; align-items: flex-start;
+            gap: 9px; position: relative;
         }
-
-        @keyframes msgFadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px) scale(0.98);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        /* ----- USER MESSAGE (emerald bubble, right) ----- */
+        @keyframes msgFadeIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .user-message {
             align-self: flex-end;
             background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-            color: #ffffff;
-            border-bottom-right-radius: 5px;
-            box-shadow:
-                0 8px 24px -12px rgba(16, 185, 129, 0.9),
-                inset 0 1px 0 rgba(255, 255, 255, 0.18);
+            color: #fff; border-bottom-right-radius: 5px;
+            box-shadow: 0 8px 24px -12px rgba(16,185,129,0.9), inset 0 1px 0 rgba(255,255,255,0.18);
         }
-
-        .user-message .msg-icon {
-            flex-shrink: 0;
-            width: 26px;
-            height: 26px;
-            stroke: #ffffff;
-            stroke-width: 2.2;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            margin-top: 1px;
-            opacity: 0.9;
-        }
-
-        /* ----- AI MESSAGE (dark green card, left) ----- */
+        .user-message .msg-icon { flex-shrink: 0; width: 26px; height: 26px; stroke: #fff; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; margin-top: 1px; opacity: 0.9; }
         .ai-message {
             align-self: flex-start;
             background: linear-gradient(155deg, #0a2619 0%, #051510 100%);
-            color: #ffffff;
-            border: 1px solid rgba(16, 185, 129, 0.30);
-            border-bottom-left-radius: 5px;
-            box-shadow:
-                0 10px 28px -20px rgba(0, 0, 0, 0.95),
-                0 0 22px -14px rgba(16, 185, 129, 0.6),
-                inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            color: #fff; border: 1px solid rgba(16,185,129,0.30); border-bottom-left-radius: 5px;
+            box-shadow: 0 10px 28px -20px rgba(0,0,0,0.95), 0 0 22px -14px rgba(16,185,129,0.6),
+                        inset 0 1px 0 rgba(255,255,255,0.04);
         }
-
-        /* Small AI avatar used inside messages */
-        .msg-avatar {
-            width: 26px;
-            height: 26px;
-            padding: 2px;
-            border-width: 1.5px;
-            margin-top: 2px;
-            box-shadow:
-                0 0 10px -2px rgba(16, 185, 129, 0.75),
-                0 0 18px -6px rgba(16, 185, 129, 0.55),
-                inset 0 0 5px rgba(16, 185, 129, 0.20);
-        }
-
-        .ai-message .msg-content {
-            flex: 1;
-            min-width: 0;
-        }
-
-        /* Gold accent labels inside AI responses */
-        .ai-message .section-title {
-            display: block;
-            margin-top: 8px;
-            font-weight: 800;
-            color: var(--gold-300);
-            letter-spacing: 0.005em;
-        }
-
-        .ai-message strong {
-            color: var(--gold-300);
-            font-weight: 800;
-        }
-
-        .ai-message a {
-            color: var(--emerald-300);
-            text-decoration: underline;
-            text-underline-offset: 2px;
-        }
-
-        .ai-message a:hover {
-            color: var(--emerald-200);
-        }
-
-        .ai-message ul,
-        .ai-message ol {
-            padding-left: 1.4rem;
-            margin: 6px 0;
-        }
-
-        .ai-message li {
-            margin-bottom: 3px;
-        }
-
-        .ai-message hr {
-            border: 0;
-            border-top: 1px solid rgba(16, 185, 129, 0.15);
-            margin: 8px 0;
-        }
-
-        /* ============================================================
-           TYPING INDICATOR
-           ============================================================ */
+        .msg-avatar { width: 26px; height: 26px; padding: 2px; border-width: 1.5px; margin-top: 2px; box-shadow: 0 0 10px -2px rgba(16,185,129,0.75), 0 0 18px -6px rgba(16,185,129,0.55), inset 0 0 5px rgba(16,185,129,0.20); }
+        .ai-message .msg-content { flex: 1; min-width: 0; }
+        .ai-message .section-title { display: block; margin-top: 8px; font-weight: 800; color: var(--gold-300); }
+        .ai-message strong { color: var(--gold-300); font-weight: 800; }
+        .ai-message em { color: var(--emerald-300); font-style: normal; font-weight: 700; }
+        .ai-message a { color: var(--emerald-300); text-decoration: underline; text-underline-offset: 2px; }
+        .ai-message ul, .ai-message ol { padding-left: 1.4rem; margin: 6px 0; }
+        .ai-message li { margin-bottom: 3px; }
+        .ai-message hr { border: 0; border-top: 1px solid rgba(16,185,129,0.15); margin: 8px 0; }
         .typing-indicator {
             align-self: flex-start;
             background: linear-gradient(155deg, #0a2619 0%, #051510 100%);
-            border: 1px solid rgba(16, 185, 129, 0.30);
-            border-radius: 16px;
-            border-bottom-left-radius: 5px;
-            padding: 11px 14px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.82rem;
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            animation: msgFadeIn 0.3s ease;
-            box-shadow: 0 10px 28px -20px rgba(0, 0, 0, 0.95),
-                        0 0 22px -14px rgba(16, 185, 129, 0.6);
+            border: 1px solid rgba(16,185,129,0.30); border-radius: 16px;
+            border-bottom-left-radius: 5px; padding: 11px 14px;
+            color: rgba(255,255,255,0.7); font-size: 0.82rem;
+            display: flex; align-items: center; gap: 9px; animation: msgFadeIn 0.3s ease;
+            box-shadow: 0 10px 28px -20px rgba(0,0,0,0.95), 0 0 22px -14px rgba(16,185,129,0.6);
         }
-
-        .typing-indicator .dots {
-            display: inline-flex;
-            gap: 4px;
-            margin-left: 2px;
-        }
-
-        .typing-indicator .dots span {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--emerald-400);
-            opacity: 0.35;
-            animation: dotPulse 1.2s ease-in-out infinite;
-        }
-
+        .typing-indicator .dots { display: inline-flex; gap: 4px; margin-left: 2px; }
+        .typing-indicator .dots span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--emerald-400); opacity: 0.35; animation: dotPulse 1.2s ease-in-out infinite; }
         .typing-indicator .dots span:nth-child(2) { animation-delay: 0.18s; }
         .typing-indicator .dots span:nth-child(3) { animation-delay: 0.36s; }
-
-        @keyframes dotPulse {
-            0%, 100% { opacity: 0.28; transform: translateY(0); }
-            50% { opacity: 1; transform: translateY(-3px); }
-        }
-
-        /* ============================================================
-           EMPTY STATE
-           ============================================================ */
-        .empty-state {
-            text-align: center;
-            padding: 30px 16px;
-            color: rgba(255, 255, 255, 0.4);
-            align-self: center;
-            margin: auto 0;
-        }
-
-        .empty-state .empty-avatar {
-            width: 76px;
-            height: 76px;
-            margin: 0 auto 14px;
-            border-width: 3px;
-            padding: 5px;
-            box-shadow:
-                0 0 26px -4px rgba(16, 185, 129, 0.85),
-                0 0 50px -14px rgba(16, 185, 129, 0.55),
-                inset 0 0 12px rgba(16, 185, 129, 0.25);
-        }
-
-        .empty-state .title {
-            font-size: 1rem;
-            font-weight: 800;
-            color: #ffffff;
-        }
-
-        .empty-state .sub {
-            font-size: 0.8rem;
-            color: var(--faint);
-            margin-top: 4px;
-        }
-
-        /* ============================================================
-           INPUT AREA
-           ============================================================ */
+        @keyframes dotPulse { 0%, 100% { opacity: 0.28; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+        .empty-state { text-align: center; padding: 30px 16px; color: rgba(255,255,255,0.4); align-self: center; margin: auto 0; }
+        .empty-state .empty-avatar { width: 76px; height: 76px; margin: 0 auto 14px; border-width: 3px; padding: 5px; box-shadow: 0 0 26px -4px rgba(16,185,129,0.85), 0 0 50px -14px rgba(16,185,129,0.55), inset 0 0 12px rgba(16,185,129,0.25); }
+        .empty-state .title { font-size: 1rem; font-weight: 800; color: #fff; }
+        .empty-state .sub { font-size: 0.8rem; color: var(--faint); margin-top: 4px; }
         .input-area {
-            display: flex;
-            gap: 8px;
-            background: linear-gradient(150deg, rgba(10, 34, 24, 0.9) 0%, rgba(4, 12, 9, 0.95) 100%);
-            border-radius: 60px;
-            padding: 5px 5px 5px 16px;
-            align-items: center;
-            border: 1.5px solid rgba(16, 185, 129, 0.22);
-            flex-shrink: 0;
+            display: flex; gap: 8px;
+            background: linear-gradient(150deg, rgba(10,34,24,0.9) 0%, rgba(4,12,9,0.95) 100%);
+            border-radius: 60px; padding: 5px 5px 5px 16px; align-items: center;
+            border: 1.5px solid rgba(16,185,129,0.22); flex-shrink: 0;
             transition: border-color 0.25s ease, box-shadow 0.25s ease;
         }
-
-        .input-area:focus-within {
-            border-color: rgba(16, 185, 129, 0.7);
-            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.10),
-                        0 0 26px -6px rgba(16, 185, 129, 0.55);
-        }
-
-        .input-area input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            padding: 12px 0;
-            color: #ffffff;
-            font-size: 0.9rem;
-            font-family: inherit;
-            outline: none;
-            min-width: 0;
-        }
-
-        .input-area input::placeholder {
-            color: rgba(255, 255, 255, 0.32);
-        }
-
+        .input-area:focus-within { border-color: rgba(16,185,129,0.7); box-shadow: 0 0 0 4px rgba(16,185,129,0.10), 0 0 26px -6px rgba(16,185,129,0.55); }
+        .input-area input { flex: 1; background: transparent; border: none; padding: 12px 0; color: #fff; font-size: 0.9rem; font-family: inherit; outline: none; min-width: 0; }
+        .input-area input::placeholder { color: rgba(255,255,255,0.32); }
         .send-btn {
             background: linear-gradient(135deg, #10b981 0%, #059669 55%, #047857 100%);
-            border: none;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.15s, filter 0.2s, box-shadow 0.2s;
-            flex-shrink: 0;
-            color: #ffffff;
-            box-shadow:
-                0 8px 20px -10px rgba(16, 185, 129, 0.95),
-                inset 0 1px 0 rgba(255, 255, 255, 0.25);
+            border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: transform 0.15s, filter 0.2s, box-shadow 0.2s; flex-shrink: 0; color: #fff;
+            box-shadow: 0 8px 20px -10px rgba(16,185,129,0.95), inset 0 1px 0 rgba(255,255,255,0.25);
             -webkit-tap-highlight-color: transparent;
         }
-
-        .send-btn:hover {
-            filter: brightness(1.08);
-        }
-
-        .send-btn:active {
-            transform: scale(0.94);
-        }
-
-        .send-btn:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
-
-        .send-btn svg {
-            width: 18px;
-            height: 18px;
-            fill: currentColor;
-            transform: translateX(1px);
-        }
-
-        /* ============================================================
-           NAVIGATION BUTTONS INSIDE AI MESSAGES
-           ============================================================ */
-        .nav-btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 7px;
-            margin-top: 12px;
-        }
-
+        .send-btn:hover { filter: brightness(1.08); }
+        .send-btn:active { transform: scale(0.94); }
+        .send-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+        .send-btn svg { width: 18px; height: 18px; fill: currentColor; transform: translateX(1px); }
+        .nav-btn-group { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
         .nav-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            border-radius: 999px;
-            font-size: 0.72rem;
-            font-weight: 800;
-            font-family: inherit;
-            cursor: pointer;
-            transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
-            text-decoration: none;
-            letter-spacing: 0.02em;
-            background: rgba(16, 185, 129, 0.10);
-            border: 1px solid rgba(52, 211, 153, 0.42);
-            color: var(--emerald-300);
-            -webkit-tap-highlight-color: transparent;
+            display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;
+            border-radius: 999px; font-size: 0.72rem; font-weight: 800;
+            font-family: inherit; cursor: pointer; transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
+            text-decoration: none; letter-spacing: 0.02em;
+            background: rgba(16,185,129,0.10); border: 1px solid rgba(52,211,153,0.42);
+            color: var(--emerald-300); -webkit-tap-highlight-color: transparent;
         }
-
-        .nav-btn:hover {
-            background: rgba(16, 185, 129, 0.18);
-            transform: translateY(-1px);
-        }
-
-        .nav-btn svg {
-            width: 14px;
-            height: 14px;
-            stroke: currentColor;
-            stroke-width: 2.2;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .nav-btn.nav-btn-primary {
-            background: linear-gradient(135deg, #10b981 0%, #059669 55%, #047857 100%);
-            border-color: rgba(52, 211, 153, 0.65);
-            color: #ffffff;
-            box-shadow: 0 6px 16px -8px rgba(16, 185, 129, 0.9);
-        }
-
-        /* ============================================================
-           EMAIL CONTACT COMPONENT
-           ============================================================ */
-        .email-contact {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(245, 197, 66, 0.06);
-            border: 1px solid rgba(245, 197, 66, 0.28);
-            border-radius: 14px;
-            padding: 8px 8px 8px 14px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-
-        .email-contact .email-addr {
-            font-weight: 800;
-            color: var(--gold-300);
-            font-size: 0.8rem;
-            word-break: break-all;
-        }
-
-        .email-contact .email-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 5px 11px;
-            border-radius: 999px;
-            font-size: 0.68rem;
-            font-weight: 800;
-            font-family: inherit;
-            cursor: pointer;
-            transition: background 0.2s;
-            border: none;
-            background: rgba(16, 185, 129, 0.12);
-            color: var(--emerald-300);
-            text-decoration: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .email-contact .email-btn:hover {
-            background: rgba(16, 185, 129, 0.22);
-        }
-
-        .email-contact .email-btn svg {
-            width: 13px;
-            height: 13px;
-            stroke: currentColor;
-            stroke-width: 2.2;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .email-contact .email-btn.copy-success {
-            color: var(--gold-300);
-            background: rgba(245, 197, 66, 0.14);
-        }
-
-        /* ============================================================
-           TOAST
-           ============================================================ */
+        .nav-btn:hover { background: rgba(16,185,129,0.18); transform: translateY(-1px); }
+        .nav-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        .nav-btn.nav-btn-primary { background: linear-gradient(135deg, #10b981 0%, #059669 55%, #047857 100%); border-color: rgba(52,211,153,0.65); color: #fff; box-shadow: 0 6px 16px -8px rgba(16,185,129,0.9); }
+        .email-contact { display: flex; align-items: center; gap: 8px; background: rgba(245,197,66,0.06); border: 1px solid rgba(245,197,66,0.28); border-radius: 14px; padding: 8px 8px 8px 14px; margin-top: 10px; flex-wrap: wrap; }
+        .email-contact .email-addr { font-weight: 800; color: var(--gold-300); font-size: 0.8rem; word-break: break-all; }
+        .email-contact .email-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 999px; font-size: 0.68rem; font-weight: 800; font-family: inherit; cursor: pointer; transition: background 0.2s; border: none; background: rgba(16,185,129,0.12); color: var(--emerald-300); text-decoration: none; -webkit-tap-highlight-color: transparent; }
+        .email-contact .email-btn:hover { background: rgba(16,185,129,0.22); }
+        .email-contact .email-btn svg { width: 13px; height: 13px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        .email-contact .email-btn.copy-success { color: var(--gold-300); background: rgba(245,197,66,0.14); }
         .toast {
-            position: fixed;
-            bottom: 90px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 22px;
-            border-radius: 999px;
-            font-weight: 700;
-            font-size: 0.82rem;
-            z-index: 9999;
-            animation: toastIn 0.3s ease;
-            max-width: 90%;
-            text-align: center;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+            padding: 12px 22px; border-radius: 999px; font-weight: 700; font-size: 0.82rem;
+            z-index: 9999; animation: toastIn 0.3s ease; max-width: 90%; text-align: center;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
         }
-
-        .toast.success {
-            background: rgba(16, 185, 129, 0.16);
-            color: var(--emerald-200);
-            border: 1px solid rgba(52, 211, 153, 0.4);
-        }
-
-        .toast.error {
-            background: rgba(239, 68, 68, 0.14);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.35);
-        }
-
-        @keyframes toastIn {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(20px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0) scale(1);
-            }
-        }
-
-        /* ============================================================
-           RESPONSIVE
-           ============================================================ */
+        .toast.success { background: rgba(16,185,129,0.16); color: var(--emerald-200); border: 1px solid rgba(52,211,153,0.4); }
+        .toast.error { background: rgba(239,68,68,0.14); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35); }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px) scale(0.95); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } }
         @media (max-width: 600px) {
-            .container {
-                padding: 10px 10px 10px;
-            }
-
-            .assistant-avatar {
-                width: 38px;
-                height: 38px;
-                padding: 2.5px;
-            }
-
-            .assistant-name {
-                font-size: 0.85rem;
-            }
-
-            .assistant-status {
-                font-size: 0.56rem;
-                letter-spacing: 0.1em;
-            }
-
-            .back-btn {
-                font-size: 0.74rem;
-                padding: 6px 11px 6px 9px;
-            }
-
-            .back-btn svg {
-                width: 14px;
-                height: 14px;
-            }
-
-            .message {
-                max-width: 90%;
-                font-size: 0.85rem;
-                padding: 10px 12px;
-            }
-
-            .msg-avatar {
-                width: 24px;
-                height: 24px;
-            }
-
-            .input-area {
-                padding: 4px 4px 4px 14px;
-            }
-
-            .input-area input {
-                font-size: 0.86rem;
-                padding: 11px 0;
-            }
-
-            .send-btn {
-                width: 42px;
-                height: 42px;
-            }
-
-            .send-btn svg {
-                width: 17px;
-                height: 17px;
-            }
-
-            .nav-btn {
-                font-size: 0.66rem;
-                padding: 6px 11px;
-            }
-
-            .email-contact {
-                padding: 6px 6px 6px 11px;
-            }
-
-            .email-contact .email-addr {
-                font-size: 0.74rem;
-            }
-
-            .empty-state .empty-avatar {
-                width: 66px;
-                height: 66px;
-                padding: 4px;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .assistant-name {
-                font-size: 0.8rem;
-            }
-
-            .message {
-                font-size: 0.82rem;
-                padding: 9px 11px;
-            }
+            .container { padding: 10px; }
+            .assistant-avatar { width: 38px; height: 38px; padding: 2.5px; }
+            .assistant-name { font-size: 0.85rem; }
+            .assistant-status { font-size: 0.56rem; letter-spacing: 0.1em; }
+            .back-btn { font-size: 0.74rem; padding: 6px 11px 6px 9px; }
+            .back-btn svg { width: 14px; height: 14px; }
+            .message { max-width: 90%; font-size: 0.85rem; padding: 10px 12px; }
+            .msg-avatar { width: 24px; height: 24px; }
+            .input-area { padding: 4px 4px 4px 14px; }
+            .input-area input { font-size: 0.86rem; padding: 11px 0; }
+            .send-btn { width: 42px; height: 42px; }
+            .send-btn svg { width: 17px; height: 17px; }
+            .nav-btn { font-size: 0.66rem; padding: 6px 11px; }
+            .empty-state .empty-avatar { width: 66px; height: 66px; padding: 4px; }
         }
     </style>
 </head>
 <body>
-
     <div class="container">
-
-        <!-- ============================================================
-             HEADER — Sajvera Campaign avatar
-             Dark green/black circular frame + emerald accents + green glow
-             surrounding the preserved purple/blue circular symbol.
-             ============================================================ -->
         <header class="header">
             <button class="back-btn" id="backBtn" type="button">
                 <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 Back
             </button>
-
             <div class="assistant-brand">
                 <span class="ai-avatar assistant-avatar">
                     <span class="avatar-symbol">
@@ -797,16 +216,10 @@
                 </span>
                 <div class="assistant-meta">
                     <div class="assistant-name">Sajvera Campaign</div>
-                    <div class="assistant-status">
-                        <span class="status-dot"></span> Online • 24/7
-                    </div>
+                    <div class="assistant-status"><span class="status-dot"></span> Online • 24/7</div>
                 </div>
             </div>
         </header>
-
-        <!-- ============================================================
-             CHAT BOX
-             ============================================================ -->
         <div class="chat-box" id="chatBox">
             <div class="empty-state" id="emptyState">
                 <span class="ai-avatar empty-avatar">
@@ -815,31 +228,20 @@
                     </span>
                 </span>
                 <div class="title">Sajvera Campaign</div>
-                <div class="sub">Online • 24/7 — ask me anything about the platform</div>
+                <div class="sub">Online • 24/7 — deposit or withdraw right here in chat</div>
             </div>
         </div>
-
-        <!-- ============================================================
-             INPUT AREA
-             ============================================================ -->
         <div class="input-area">
-            <input type="text" id="userInput" placeholder="Ask about deposits, withdrawals, plans…" autocomplete="off" />
+            <input type="text" id="userInput" placeholder="Ask or say: deposit / withdraw…" autocomplete="off" />
             <button class="send-btn" id="sendBtn" type="button" aria-label="Send">
                 <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
             </button>
         </div>
-
     </div>
 
-    <!-- ================================================================
-         JAVASCRIPT — Existing functionality preserved
-         ----------------------------------------------------------------
-         • Firebase config, auth, chat history, message saving untouched
-         • AI avatar markup updated to the new green-framed component
-         ================================================================ -->
     <script>
         // ================================================================
-        // FIREBASE CONFIG (unchanged)
+        // FIREBASE
         // ================================================================
         var firebaseConfig = {
             apiKey: "AIzaSyALbWDHrhratYCCq3WpAu7jZFw6S8kTg2U",
@@ -856,27 +258,20 @@
         db.settings({ persistence: true });
         auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(console.warn);
 
-        // ================================================================
-        // GEMINI API CONFIGURATION (placeholder — safe; fallback used)
-        // ================================================================
         var GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY_HERE';
-        var GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' +
-            GEMINI_API_KEY;
-
-        // ================================================================
-        // ASSISTANT IDENTITY + PLATFORM SUPPORT CONSTANTS
-        // ================================================================
+        var GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + GEMINI_API_KEY;
         var AI_NAME = 'Sajvera Campaign';
         var SUPPORT_EMAIL = 'Pureorecapital@gmail.com';
 
-        // ================================================================
-        // DOM REFS
-        // ================================================================
+        // Safe markers that survive HTML escaping
+        var NAV_OPEN = '\u0001NAVOPEN\u0001';
+        var NAV_CLOSE = '\u0001NAVCLOSE\u0001';
+        var EMAIL_TOKEN = '\u0001EMAILTOKEN\u0001';
+
         var chatBox = document.getElementById('chatBox');
         var userInput = document.getElementById('userInput');
         var sendBtn = document.getElementById('sendBtn');
         var backBtn = document.getElementById('backBtn');
-
         var currentUserId = null;
         var messagesRef = null;
         var unsubscribe = null;
@@ -884,24 +279,410 @@
         var blockUnsub = null;
 
         // ================================================================
-        // TOAST
+        // AI TRANSACTION FLOW STATE
         // ================================================================
-        function showToast(msg, isError) {
-            var existing = document.querySelector('.toast');
-            if (existing) existing.remove();
-            var toast = document.createElement('div');
-            toast.className = 'toast ' + (isError ? 'error' : 'success');
-            toast.textContent = msg;
-            document.body.appendChild(toast);
-            setTimeout(function() { if (toast.parentNode) toast.remove(); }, 3500);
+        var assistantFlow = { state: 'idle', data: {} };
+        var depositRules = {
+            requireAmountMatch: true, requireAgentName: true,
+            requireNetworkKeyword: true, requireTxKeyword: true, requireFutureDate: true
+        };
+        var hardcodedAgents = {
+            mtn: [
+                { number: '0967340042', name: 'Jeremiah ilunga' },
+                { number: '0963070992', name: 'John Kabwe' }
+            ],
+            airtel: [
+                { number: '0571518417', name: 'John Kabwe' }
+            ]
+        };
+
+        function loadDepositRulesForAssistant() {
+            return db.collection('systemSettings').doc('depositRules').get().then(function(doc) {
+                if (doc.exists) {
+                    var d = doc.data();
+                    depositRules.requireAmountMatch = d.requireAmountMatch !== false;
+                    depositRules.requireAgentName = d.requireAgentName !== false;
+                    depositRules.requireNetworkKeyword = d.requireNetworkKeyword !== false;
+                    depositRules.requireTxKeyword = d.requireTxKeyword !== false;
+                    depositRules.requireFutureDate = d.requireFutureDate !== false;
+                }
+            }).catch(function(err) { console.warn('Deposit rules load failed:', err); });
+        }
+
+        function loadAgentsForAssistant(network) {
+            return db.collection('systemSettings').doc('depositAgents').get().then(function(doc) {
+                if (doc.exists) {
+                    var data = doc.data();
+                    var agents = (data.agents && data.agents[network]) ? data.agents[network] : [];
+                    if (agents.length > 0) return agents[Math.floor(Math.random() * agents.length)];
+                }
+                var fb = hardcodedAgents[network] || [];
+                return fb.length > 0 ? fb[Math.floor(Math.random() * fb.length)] : null;
+            }).catch(function(err) {
+                console.warn('Agent load failed:', err);
+                var fb = hardcodedAgents[network] || [];
+                return fb.length > 0 ? fb[Math.floor(Math.random() * fb.length)] : null;
+            });
+        }
+
+        function isWithdrawTimeAllowed() {
+            var now = new Date();
+            var h = now.getHours();
+            return h >= 9 && h < 17;
+        }
+
+        function validateDepositSms(sms, data) {
+            var lowerSms = sms.toLowerCase();
+            var errors = [];
+            var agentClean = String(data.agentNumber || '').replace(/\D/g, '');
+            if (agentClean && lowerSms.indexOf(agentClean) === -1) {
+                errors.push('Agent number (' + data.agentNumber + ') not found in SMS.');
+            }
+            if (depositRules.requireAgentName && data.accountName) {
+                var parts = String(data.accountName).toLowerCase().split(' ');
+                var found = parts.some(function(p) { return p.length > 2 && lowerSms.indexOf(p) !== -1; });
+                if (!found) errors.push('Account name "' + data.accountName + '" not found in SMS.');
+            }
+            if (depositRules.requireAmountMatch) {
+                var m = lowerSms.match(/(?:k|zmw|r|zar|usd|eur|gbp|ngn|ghs|tzs|zwl|cdf)\s*(\d+\.?\d*)/i);
+                var smsAmt = m ? parseFloat(m[1]) : 0;
+                if (Math.abs(smsAmt - data.amount) > 0.01) {
+                    errors.push('SMS amount (' + smsAmt.toFixed(2) + ') does not match deposit (' + data.amount.toFixed(2) + ').');
+                }
+            }
+            if (depositRules.requireNetworkKeyword) {
+                if (!['mtn','airtel','zamtel'].some(function(n){return lowerSms.indexOf(n)!==-1;})) {
+                    errors.push('No network keyword (MTN/Airtel/Zamtel) found in SMS.');
+                }
+            }
+            if (depositRules.requireTxKeyword) {
+                if (!['send','sent','received','paid','transfer','successful','payment'].some(function(k){return lowerSms.indexOf(k)!==-1;})) {
+                    errors.push('No transaction keyword found in SMS.');
+                }
+            }
+            if (depositRules.requireFutureDate) {
+                var dm = lowerSms.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b/);
+                if (dm) {
+                    var parsed = new Date(dm[1]);
+                    if (!isNaN(parsed) && parsed > new Date()) {
+                        errors.push('SMS contains a future transaction date (' + dm[1] + ').');
+                    }
+                }
+            }
+            return { valid: errors.length === 0, errors: errors };
         }
 
         // ================================================================
-        // SCROLL — preserves user scroll position, only auto-scrolls
-        // when a new message is appended (not on re-render).
+        // FLOW HANDLER — runs BEFORE Gemini/fallback
+        // ================================================================
+        async function handleAssistantFlow(text) {
+            var lower = text.toLowerCase().trim();
+            var state = assistantFlow.state;
+            var d = assistantFlow.data;
+
+            // Global cancel
+            if (state !== 'idle' && /^(cancel|stop|exit|quit)$/i.test(lower)) {
+                assistantFlow.state = 'idle';
+                assistantFlow.data = {};
+                return "No problem — cancelled. 😊 How else can I help you?";
+            }
+
+            // ---- START DEPOSIT ----
+            if (state === 'idle') {
+                if (/(i want to deposit|make a deposit|start deposit|deposit money|add money|deposit zmw|^deposit$|^deposit\s)/i.test(lower)) {
+                    assistantFlow.state = 'deposit_amount';
+                    assistantFlow.data = {};
+                    return "Sure! Let's deposit some money 💰\n\nHow much would you like to deposit?\n\nMinimum: *1 ZMW* — no maximum.\n\nType the amount, e.g. *100*";
+                }
+                if (/(i want to withdraw|make a withdrawal|start withdrawal|cash out|^withdraw$|^withdraw\s|withdrawal money)/i.test(lower)) {
+                    if (!isWithdrawTimeAllowed()) {
+                        return "⏰ Withdrawals are only allowed between *09:00* and *17:00* (9 AM – 5 PM).\n\nPlease come back during those hours. Meanwhile I can still help you with deposits, plans, and other questions. 😊";
+                    }
+                    assistantFlow.state = 'withdraw_amount';
+                    assistantFlow.data = {};
+                    return "Got it 😊 Let's set up your withdrawal.\n\nHow much would you like to withdraw? A *10% processing fee* applies.\n\nType the amount in ZMW, e.g. *200*";
+                }
+            }
+
+            // ---- DEPOSIT: AMOUNT ----
+            if (state === 'deposit_amount') {
+                var amt = parseFloat(text.replace(/[^0-9.]/g, ''));
+                if (isNaN(amt) || amt < 1) {
+                    return "Please enter a valid amount of at least *1 ZMW*.\n\nExample: *100*";
+                }
+                d.amount = amt;
+                assistantFlow.state = 'deposit_network';
+                return "Great! You want to deposit *" + amt.toFixed(2) + " ZMW*.\n\nWhich network will you use?\n\n• MTN\n• Airtel\n• Zamtel";
+            }
+
+            // ---- DEPOSIT: NETWORK ----
+            if (state === 'deposit_network') {
+                var net = null;
+                if (/\bmtn\b/i.test(lower)) net = 'mtn';
+                else if (/\bairtel\b/i.test(lower)) net = 'airtel';
+                else if (/\bzamtel\b/i.test(lower)) net = 'zamtel';
+                if (!net) return "Please choose one of: *MTN*, *Airtel*, or *Zamtel*.";
+                if (net === 'zamtel') {
+                    assistantFlow.state = 'idle';
+                    assistantFlow.data = {};
+                    return "🚀 Zamtel deposits are coming soon. Please choose *MTN* or *Airtel* instead.\n\nWould you like to try a different network?";
+                }
+                d.network = net;
+                assistantFlow.state = 'deposit_phone';
+                var hint = net === 'mtn' ? '96 or 76' : (net === 'airtel' ? '97, 77, or 57' : '95 or 75');
+                return "Great — *" + net.toUpperCase() + "* it is.\n\nPlease enter your 9-digit phone number (without +260).\n\nPrefix should be " + hint + " — e.g. *963219651*";
+            }
+
+            // ---- DEPOSIT: PHONE ----
+            if (state === 'deposit_phone') {
+                var phone = text.replace(/\D/g, '');
+                if (phone.length !== 9) return "Please enter exactly *9 digits* (without +260). Example: *963219651*";
+                var prefix = phone.substring(0, 2);
+                var net2 = d.network;
+                var validP = net2 === 'mtn' ? ['96','76'] : (net2 === 'airtel' ? ['97','77','57'] : ['95','75']);
+                if (validP.indexOf(prefix) === -1) {
+                    return "That prefix doesn't match *" + net2.toUpperCase() + "*.\n\nValid prefixes: " + validP.join(', ') + "\n\nPlease enter your 9-digit phone number again.";
+                }
+                d.phone = '+260' + phone;
+                var agent = await loadAgentsForAssistant(net2);
+                if (!agent) {
+                    assistantFlow.state = 'idle';
+                    assistantFlow.data = {};
+                    return "Sorry, no agent is currently available for *" + net2.toUpperCase() + "*. Please try another network or contact support.";
+                }
+                d.agentNumber = agent.number;
+                d.accountName = agent.name;
+                d.agentId = agent.id || '';
+                assistantFlow.state = 'deposit_sms';
+                return "✅ Here's your payment info:\n\n" +
+                    "📶 Network: *" + net2.toUpperCase() + "*\n" +
+                    "📞 Phone: *" + d.phone + "*\n" +
+                    "💰 Amount: *" + d.amount.toFixed(2) + " ZMW*\n\n" +
+                    "━━━━━━━━━━━━━\n" +
+                    "🏦 *Send the money to:*\n\n" +
+                    "Agent Number: *" + agent.number + "*\n" +
+                    "Account Name: *" + agent.name + "*\n" +
+                    "Amount: *ZMW " + d.amount.toFixed(2) + "*\n" +
+                    "━━━━━━━━━━━━━\n\n" +
+                    "After you send the money, paste the *SMS confirmation* here and I'll submit your deposit for approval. 📝";
+            }
+
+            // ---- DEPOSIT: SMS ----
+            if (state === 'deposit_sms') {
+                if (text.trim().length < 15) {
+                    return "That doesn't look like a full SMS. Please paste the complete SMS confirmation you received from " + d.network.toUpperCase() + ".\n\n(Or type *cancel* to cancel.)";
+                }
+                var validation = validateDepositSms(text, d);
+                if (!validation.valid) {
+                    return "❌ I couldn't verify your SMS yet:\n\n• " + validation.errors.join('\n• ') + "\n\nPlease paste the correct SMS, or type *cancel* to cancel.";
+                }
+                if (!currentUserId) return "Please login first.";
+                try {
+                    await db.collection('deposits').add({
+                        userId: currentUserId,
+                        amount: d.amount,
+                        phone: d.phone,
+                        network: d.network,
+                        status: 'pending',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        smsText: text,
+                        agentNumber: d.agentNumber,
+                        accountName: d.accountName,
+                        agentId: d.agentId || '',
+                        submittedVia: 'AI Assistant'
+                    });
+                    var savedAmt = d.amount;
+                    assistantFlow.state = 'idle';
+                    assistantFlow.data = {};
+                    return "🎉 *Deposit submitted!*\n\n" +
+                        "Amount: *" + savedAmt.toFixed(2) + " ZMW*\n" +
+                        "Status: *Pending admin approval*\n\n" +
+                        "You can track it in your *History* page. Admin usually approves within 24 hours. 🙏";
+                } catch (err) {
+                    console.error('AI deposit error:', err);
+                    assistantFlow.state = 'idle';
+                    assistantFlow.data = {};
+                    return "❌ Sorry, I couldn't submit your deposit: " + err.message + "\n\nPlease try again or use the *Deposit* page directly.";
+                }
+            }
+
+            // ---- WITHDRAW: AMOUNT ----
+            if (state === 'withdraw_amount') {
+                var amt2 = parseFloat(text.replace(/[^0-9.]/g, ''));
+                if (isNaN(amt2) || amt2 < 1) {
+                    return "Please enter a valid withdrawal amount of at least *1 ZMW*. Example: *100*";
+                }
+                if (!isWithdrawTimeAllowed()) {
+                    assistantFlow.state = 'idle';
+                    assistantFlow.data = {};
+                    return "⏰ Withdrawal window closed. Please try between *09:00* and *17:00*.";
+                }
+                try {
+                    var uDoc = await db.collection('users').doc(currentUserId).get();
+                    var bal = uDoc.exists ? (uDoc.data().walletBalance !== undefined ? uDoc.data().walletBalance : (uDoc.data().balance || 0)) : 0;
+                    if (amt2 > bal) {
+                        return "❌ You don't have enough balance.\n\nYour current wallet balance is *" + bal.toFixed(2) + " ZMW*.\n\nPlease enter a smaller amount or type *cancel*.";
+                    }
+                } catch (e) { console.warn(e); }
+                d.amount = amt2;
+                d.fee = amt2 * 0.10;
+                d.net = amt2 * 0.90;
+                assistantFlow.state = 'withdraw_network';
+                return "Got it!\n\n💰 Amount: *" + amt2.toFixed(2) + " ZMW*\n" +
+                    "💵 Fee (10%): " + d.fee.toFixed(2) + " ZMW\n" +
+                    "✅ You'll receive: *" + d.net.toFixed(2) + " ZMW*\n\n" +
+                    "Which network should we send the money to?\n\n• MTN\n• Airtel\n• Zamtel\n• Bank";
+            }
+
+            // ---- WITHDRAW: NETWORK ----
+            if (state === 'withdraw_network') {
+                var netW = null;
+                if (/\bmtn\b/i.test(lower)) netW = 'mtn';
+                else if (/\bairtel\b/i.test(lower)) netW = 'airtel';
+                else if (/\bzamtel\b/i.test(lower)) netW = 'zamtel';
+                else if (/\bbank\b/i.test(lower)) netW = 'bank';
+                if (!netW) return "Please choose one of: *MTN*, *Airtel*, *Zamtel*, or *Bank*.";
+                d.network = netW;
+                if (netW === 'bank') {
+                    assistantFlow.state = 'withdraw_bank';
+                    return "Which bank?\n\n• EcoBank\n• Zanaco\n• ABSA Bank\n• Stanbic Bank\n\nReply with the bank name.";
+                }
+                assistantFlow.state = 'withdraw_phone';
+                var h2 = netW === 'mtn' ? '96 or 76' : (netW === 'airtel' ? '97, 77, or 57' : '95 or 75');
+                return "Please enter your 9-digit phone number on *" + netW.toUpperCase() + "*.\n\nPrefix should be " + h2 + " — e.g. *963219651*";
+            }
+
+            // ---- WITHDRAW: BANK ----
+            if (state === 'withdraw_bank') {
+                var bk = null;
+                if (/ecobank/i.test(lower)) bk = 'ecobank';
+                else if (/zanaco/i.test(lower)) bk = 'zanaco';
+                else if (/absa/i.test(lower)) bk = 'absa';
+                else if (/stanbic/i.test(lower)) bk = 'stanbic';
+                if (!bk) return "Please choose one of: *EcoBank*, *Zanaco*, *ABSA*, or *Stanbic*.";
+                d.bank = bk;
+                assistantFlow.state = 'withdraw_card';
+                return "Got it: *" + bk.toUpperCase() + "*\n\nPlease enter your *16-digit* bank card number.";
+            }
+
+            // ---- WITHDRAW: CARD ----
+            if (state === 'withdraw_card') {
+                var card = text.replace(/\D/g, '');
+                if (card.length !== 16) return "Please enter exactly *16 digits* for your card number.";
+                d.cardNumber = card;
+                assistantFlow.state = 'withdraw_name';
+                return "Now please enter the *full name* on the account.\n\nExample: *John Kabwe*";
+            }
+
+            // ---- WITHDRAW: PHONE ----
+            if (state === 'withdraw_phone') {
+                var p2 = text.replace(/\D/g, '');
+                if (p2.length !== 9) return "Please enter exactly *9 digits* (without +260). Example: *963219651*";
+                var pref2 = p2.substring(0, 2);
+                var n3 = d.network;
+                var vp2 = n3 === 'mtn' ? ['96','76'] : (n3 === 'airtel' ? ['97','77','57'] : ['95','75']);
+                if (vp2.indexOf(pref2) === -1) {
+                    return "That prefix doesn't match *" + n3.toUpperCase() + "*.\n\nValid: " + vp2.join(', ') + "\n\nPlease enter again.";
+                }
+                d.phone = '+260' + p2;
+                assistantFlow.state = 'withdraw_name';
+                return "Finally, please enter the *full name* registered on that number.\n\nExample: *John Kabwe*";
+            }
+
+            // ---- WITHDRAW: NAME ----
+            if (state === 'withdraw_name') {
+                var name = text.trim();
+                if (name.length < 3) return "Please enter a valid full name (at least 3 characters).";
+                d.accountName = name;
+                assistantFlow.state = 'withdraw_confirm';
+                return "Please confirm your withdrawal:\n\n" +
+                    "📶 Network: *" + d.network.toUpperCase() + "*\n" +
+                    "👤 Name: *" + name + "*\n" +
+                    (d.network === 'bank'
+                        ? "💳 Card: ****" + d.cardNumber.slice(-4) + "\n"
+                        : "📞 Phone: *" + d.phone + "*\n") +
+                    "💰 Amount: *" + d.amount.toFixed(2) + " ZMW*\n" +
+                    "💵 Fee (10%): " + d.fee.toFixed(2) + " ZMW\n" +
+                    "✅ You'll receive: *" + d.net.toFixed(2) + " ZMW*\n\n" +
+                    "Type *confirm* to submit, or *cancel* to abort.";
+            }
+
+            // ---- WITHDRAW: CONFIRM ----
+            if (state === 'withdraw_confirm') {
+                if (/^(confirm|yes|y|ok|submit|proceed)$/i.test(lower)) {
+                    if (!isWithdrawTimeAllowed()) {
+                        assistantFlow.state = 'idle';
+                        assistantFlow.data = {};
+                        return "⏰ Withdrawal window closed. Please try again between 09:00 and 17:00.";
+                    }
+                    try {
+                        var snapshot = d;
+                        await db.runTransaction(async function(transaction) {
+                            var uref = db.collection('users').doc(currentUserId);
+                            var usnap = await transaction.get(uref);
+                            if (!usnap.exists) throw new Error('User not found');
+                            var cur = usnap.data().walletBalance !== undefined ? usnap.data().walletBalance : (usnap.data().balance || 0);
+                            if (cur < snapshot.amount) throw new Error('Insufficient balance');
+                            var nb = cur - snapshot.amount;
+                            transaction.update(uref, { walletBalance: nb, balance: nb });
+
+                            var wref = db.collection('withdrawals').doc();
+                            var wd = {
+                                userId: currentUserId,
+                                amount: snapshot.amount,
+                                netAmount: snapshot.net,
+                                fee: snapshot.fee,
+                                status: 'pending',
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                network: snapshot.network,
+                                accountName: snapshot.accountName,
+                                phone: snapshot.phone || '',
+                                submittedVia: 'AI Assistant'
+                            };
+                            if (snapshot.network === 'bank') {
+                                wd.bankName = snapshot.bank;
+                                wd.cardNumber = snapshot.cardNumber;
+                            }
+                            transaction.set(wref, wd);
+                        });
+                        var finAmt = d.amount, finNet = d.net;
+                        assistantFlow.state = 'idle';
+                        assistantFlow.data = {};
+                        return "🎉 *Withdrawal submitted successfully!*\n\n" +
+                            "Amount: *" + finAmt.toFixed(2) + " ZMW*\n" +
+                            "You'll receive: *" + finNet.toFixed(2) + " ZMW*\n" +
+                            "Status: *Pending admin approval*\n\n" +
+                            "You can track it in your *History* page. Admin usually processes within 24 hours. 🙏";
+                    } catch (err) {
+                        console.error('AI withdraw error:', err);
+                        assistantFlow.state = 'idle';
+                        assistantFlow.data = {};
+                        return "❌ Sorry, I couldn't submit your withdrawal: " + err.message + "\n\nPlease try again or use the *Withdraw* page directly.";
+                    }
+                }
+                return "Please type *confirm* to submit or *cancel* to abort.";
+            }
+
+            return null;
+        }
+
+        // ================================================================
+        // TOAST
+        // ================================================================
+        function showToast(msg, isError) {
+            var e = document.querySelector('.toast');
+            if (e) e.remove();
+            var t = document.createElement('div');
+            t.className = 'toast ' + (isError ? 'error' : 'success');
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(function() { if (t.parentNode) t.remove(); }, 3500);
+        }
+
+        // ================================================================
+        // SCROLL
         // ================================================================
         var scrollRAF = null;
-
         function scrollToBottom() {
             if (scrollRAF) cancelAnimationFrame(scrollRAF);
             scrollRAF = requestAnimationFrame(function() {
@@ -909,36 +690,28 @@
                 scrollRAF = null;
             });
         }
-
-        function scrollToBottomImmediate() {
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
+        function scrollToBottomImmediate() { chatBox.scrollTop = chatBox.scrollHeight; }
 
         // ================================================================
-        // BLOCK LISTENER (unchanged)
+        // BLOCK LISTENER
         // ================================================================
         function watchBlockStatus(userId) {
             if (blockUnsub) blockUnsub();
             blockUnsub = db.collection('users').doc(userId).onSnapshot(function(doc) {
                 if (doc.exists && doc.data().isBlocked === true) {
-                    showToast('⚠️ Your account has been blocked. Redirecting…', true);
+                    showToast('⚠️ Account blocked. Redirecting…', true);
                     setTimeout(function() {
                         auth.signOut().then(function() { window.location.href = 'login.html'; });
                     }, 2000);
                 }
-            }, function(err) { console.warn('Block listener error:', err); });
+            }, function(err) { console.warn('Block listener:', err); });
         }
         window.addEventListener('beforeunload', function() { if (blockUnsub) blockUnsub(); });
 
         // ================================================================
         // SVG ICONS
-        // ----------------------------------------------------------------
-        // AI avatar = preserved purple/blue circular symbol inside the
-        // new dark green / emerald circular frame.
         // ================================================================
-        var userIconSVG =
-            '<svg class="msg-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
-
+        var userIconSVG = '<svg class="msg-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
         var botIconSVG =
             '<span class="ai-avatar msg-avatar">' +
                 '<span class="avatar-symbol">' +
@@ -947,7 +720,7 @@
             '</span>';
 
         // ================================================================
-        // NAV BUTTONS HELPER
+        // NAV BUTTONS
         // ================================================================
         var navIcons = {
             marketplace: '<svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>',
@@ -964,68 +737,31 @@
             dashboard: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
             support: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
         };
-
         function buildNavButton(text, href, iconSVG, primary) {
             var cls = 'nav-btn' + (primary ? ' nav-btn-primary' : '');
             return '<a href="' + href + '" class="' + cls + '">' + iconSVG + ' ' + text + '</a>';
         }
-
         function getNavButtons(question) {
             var q = question.toLowerCase();
             var btns = [];
-
-            if (q.indexOf('marketplace') !== -1 || q.indexOf('invest') !== -1 || q.indexOf('plan') !== -1 || q.indexOf('buy') !== -1 || q.indexOf('return') !== -1) {
-                btns.push(buildNavButton('Marketplace', 'marketplace.html', navIcons.marketplace, true));
-            }
-            if (q.indexOf('deposit') !== -1 || q.indexOf('pay') !== -1 || q.indexOf('fund') !== -1) {
-                btns.push(buildNavButton('Deposit', 'deposit.html', navIcons.deposit, false));
-            }
-            if (q.indexOf('withdraw') !== -1 || q.indexOf('cash out') !== -1) {
-                btns.push(buildNavButton('Withdraw', 'withdraw.html', navIcons.withdraw, false));
-            }
-            if (q.indexOf('saving') !== -1 || q.indexOf('save') !== -1 || q.indexOf('wealth') !== -1 || q.indexOf('reserve') !== -1 || q.indexOf('growth') !== -1) {
-                btns.push(buildNavButton('Saving', 'saving.html', navIcons.saving, false));
-            }
-            if (q.indexOf('loan') !== -1 || q.indexOf('borrow') !== -1 || q.indexOf('flex') !== -1 || q.indexOf('goldmine') !== -1) {
-                btns.push(buildNavButton('Loans', 'loan.html', navIcons.loan, false));
-            }
-            if (q.indexOf('history') !== -1 || q.indexOf('transaction') !== -1 || q.indexOf('record') !== -1) {
-                btns.push(buildNavButton('History', 'history.html', navIcons.history, false));
-            }
-            if (q.indexOf('income') !== -1 || q.indexOf('earning') !== -1 || q.indexOf('profit') !== -1 || q.indexOf('claim') !== -1) {
-                btns.push(buildNavButton('Income', 'income.html', navIcons.income, false));
-            }
-            if (q.indexOf('treasure') !== -1 || q.indexOf('code') !== -1) {
-                btns.push(buildNavButton('Treasure', 'treasure.html', navIcons.treasure, false));
-            }
-            if (q.indexOf('voucher') !== -1) {
-                btns.push(buildNavButton('Voucher', 'voucher.html', navIcons.voucher, false));
-            }
-            if (q.indexOf('team') !== -1 || q.indexOf('referral') !== -1 || q.indexOf('refer') !== -1 || q.indexOf('invite') !== -1) {
-                btns.push(buildNavButton('Team', 'team.html', navIcons.team, false));
-            }
-            if (q.indexOf('news') !== -1 || q.indexOf('update') !== -1 || q.indexOf('announcement') !== -1) {
-                btns.push(buildNavButton('News', 'news.html', navIcons.news, false));
-            }
-            if (q.indexOf('support') !== -1 || q.indexOf('contact') !== -1 || q.indexOf('help') !== -1 || q.indexOf('error') !== -1 || q.indexOf('failed') !== -1 || q.indexOf('not working') !== -1 || q.indexOf('broken') !== -1) {
-                btns.push(buildNavButton('Support', 'support.html', navIcons.support, true));
-            }
-            if (q.indexOf('daily') !== -1 || q.indexOf('check') !== -1 || q.indexOf('checkin') !== -1 || q.indexOf('check-in') !== -1) {
-                btns.push(buildNavButton('Daily Check-in', 'daily-check.html', navIcons.dashboard, false));
-            }
-
-            if (btns.length === 0) {
-                btns.push(buildNavButton('Dashboard', 'dashboard.html', navIcons.dashboard, false));
-            }
-
-            var seen = {};
-            var unique = [];
-            btns.forEach(function(btn) {
-                var m = btn.match(/href="([^"]+)"/);
-                if (m && !seen[m[1]]) {
-                    seen[m[1]] = true;
-                    unique.push(btn);
-                }
+            if (q.indexOf('marketplace') !== -1 || q.indexOf('invest') !== -1 || q.indexOf('plan') !== -1 || q.indexOf('buy') !== -1 || q.indexOf('return') !== -1) btns.push(buildNavButton('Marketplace', 'marketplace.html', navIcons.marketplace, true));
+            if (q.indexOf('deposit') !== -1) btns.push(buildNavButton('Deposit Page', 'deposit.html', navIcons.deposit, false));
+            if (q.indexOf('withdraw') !== -1) btns.push(buildNavButton('Withdraw Page', 'withdraw.html', navIcons.withdraw, false));
+            if (q.indexOf('saving') !== -1 || q.indexOf('save') !== -1 || q.indexOf('wealth') !== -1 || q.indexOf('reserve') !== -1 || q.indexOf('growth') !== -1) btns.push(buildNavButton('Saving', 'saving.html', navIcons.saving, false));
+            if (q.indexOf('loan') !== -1 || q.indexOf('borrow') !== -1 || q.indexOf('flex') !== -1 || q.indexOf('goldmine') !== -1) btns.push(buildNavButton('Loans', 'loan.html', navIcons.loan, false));
+            if (q.indexOf('history') !== -1 || q.indexOf('transaction') !== -1 || q.indexOf('record') !== -1) btns.push(buildNavButton('History', 'history.html', navIcons.history, false));
+            if (q.indexOf('income') !== -1 || q.indexOf('earning') !== -1 || q.indexOf('profit') !== -1 || q.indexOf('claim') !== -1) btns.push(buildNavButton('Income', 'income.html', navIcons.income, false));
+            if (q.indexOf('treasure') !== -1 || q.indexOf('code') !== -1) btns.push(buildNavButton('Treasure', 'treasure.html', navIcons.treasure, false));
+            if (q.indexOf('voucher') !== -1) btns.push(buildNavButton('Voucher', 'voucher.html', navIcons.voucher, false));
+            if (q.indexOf('team') !== -1 || q.indexOf('referral') !== -1 || q.indexOf('refer') !== -1 || q.indexOf('invite') !== -1) btns.push(buildNavButton('Team', 'team.html', navIcons.team, false));
+            if (q.indexOf('news') !== -1 || q.indexOf('update') !== -1 || q.indexOf('announcement') !== -1) btns.push(buildNavButton('News', 'news.html', navIcons.news, false));
+            if (q.indexOf('support') !== -1 || q.indexOf('contact') !== -1 || q.indexOf('help') !== -1 || q.indexOf('error') !== -1 || q.indexOf('failed') !== -1 || q.indexOf('not working') !== -1 || q.indexOf('broken') !== -1) btns.push(buildNavButton('Support', 'support.html', navIcons.support, true));
+            if (q.indexOf('daily') !== -1 || q.indexOf('check') !== -1 || q.indexOf('checkin') !== -1 || q.indexOf('check-in') !== -1) btns.push(buildNavButton('Daily Check-in', 'daily-check.html', navIcons.dashboard, false));
+            if (btns.length === 0) btns.push(buildNavButton('Dashboard', 'dashboard.html', navIcons.dashboard, false));
+            var seen = {}, unique = [];
+            btns.forEach(function(b) {
+                var m = b.match(/href="([^"]+)"/);
+                if (m && !seen[m[1]]) { seen[m[1]] = true; unique.push(b); }
             });
             return unique.slice(0, 3);
         }
@@ -1037,128 +773,109 @@
             return '<div class="email-contact">' +
                 '<span class="email-addr">' + SUPPORT_EMAIL + '</span>' +
                 '<a href="mailto:' + SUPPORT_EMAIL + '" class="email-btn">' +
-                '<svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>' +
-                ' Email' +
-                '</a>' +
+                '<svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> Email</a>' +
                 '<button type="button" class="email-btn" id="copyEmailBtn">' +
-                '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
-                ' Copy' +
-                '</button>' +
+                '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>' +
                 '</div>';
         }
 
         // ================================================================
-        // FORMAT AI RESPONSE
+        // FORMAT AI RESPONSE (fixes raw nav HTML + preserves all live HTML)
         // ================================================================
         function formatAIResponse(text) {
-            var out = text;
+            var out = String(text == null ? '' : text);
 
-            if (out.indexOf('[EMAIL_CONTACT]') !== -1) {
-                out = out.replace(/\[EMAIL_CONTACT\]/g, buildEmailComponent());
-            }
+            // Pull out nav markers
+            var navGroups = [];
+            var navMarkerRe = new RegExp(NAV_OPEN + '([\\s\\S]*?)' + NAV_CLOSE, 'g');
+            out = out.replace(navMarkerRe, function(m, inner) {
+                navGroups.push(inner);
+                return '@@NAV_' + (navGroups.length - 1) + '@@';
+            });
 
-            var safe = out
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
+            // Extract legacy raw nav-btn-group blocks (from already-saved messages)
+            out = out.replace(/<div class="nav-btn-group">[\s\S]*?<\/div>/g, function(m) {
+                navGroups.push(m);
+                return '@@NAV_' + (navGroups.length - 1) + '@@';
+            });
+            out = out.replace(/(?:<a\b[^>]*class="nav-btn[^"]*"[^>]*>[\s\S]*?<\/a>\s*)+/g, function(m) {
+                navGroups.push('<div class="nav-btn-group">' + m + '</div>');
+                return '@@NAV_' + (navGroups.length - 1) + '@@';
+            });
 
-            if (text.indexOf('[EMAIL_CONTACT]') !== -1) {
-                safe = text
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;');
-                safe = safe.replace(/\[EMAIL_CONTACT\]/g, '@@EMAIL_COMPONENT@@');
-            }
+            // Extract email placeholders
+            var hasEmail = out.indexOf('[EMAIL_CONTACT]') !== -1;
+            if (hasEmail) out = out.split('[EMAIL_CONTACT]').join(EMAIL_TOKEN);
 
+            // Escape remaining HTML
+            var safe = out.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            // Line-by-line
             var lines = safe.split('\n');
-            var inList = false;
-            var listType = null;
-            var result = [];
-
+            var inList = false, listType = null, result = [];
             for (var i = 0; i < lines.length; i++) {
-                var line = lines[i];
-                var trimmed = line.trim();
-
-                var olMatch = trimmed.match(/^(\d+)\.\s+(.+)/);
-                var ulMatch = trimmed.match(/^[-•]\s+(.+)/);
-
-                if (olMatch) {
+                var line = lines[i], trimmed = line.trim();
+                var ol = trimmed.match(/^(\d+)\.\s+(.+)/);
+                var ul = trimmed.match(/^[-•]\s+(.+)/);
+                if (ol) {
                     if (!inList || listType !== 'ol') {
                         if (inList) result.push(listType === 'ol' ? '</ol>' : '</ul>');
-                        inList = true;
-                        listType = 'ol';
-                        result.push('<ol>');
+                        inList = true; listType = 'ol'; result.push('<ol>');
                     }
-                    result.push('<li>' + olMatch[2] + '</li>');
-                } else if (ulMatch) {
+                    result.push('<li>' + ol[2] + '</li>');
+                } else if (ul) {
                     if (!inList || listType !== 'ul') {
                         if (inList) result.push(listType === 'ol' ? '</ol>' : '</ul>');
-                        inList = true;
-                        listType = 'ul';
-                        result.push('<ul>');
+                        inList = true; listType = 'ul'; result.push('<ul>');
                     }
-                    result.push('<li>' + ulMatch[1] + '</li>');
+                    result.push('<li>' + ul[1] + '</li>');
                 } else {
-                    if (inList) {
-                        result.push(listType === 'ol' ? '</ol>' : '</ul>');
-                        inList = false;
-                        listType = null;
-                    }
-                    if (trimmed === '') {
-                        result.push('<br>');
-                    } else if (/^─+$/.test(trimmed)) {
-                        result.push('<hr>');
+                    if (inList) { result.push(listType === 'ol' ? '</ol>' : '</ul>'); inList = false; listType = null; }
+                    if (trimmed === '') result.push('<br>');
+                    else if (/^─+$/.test(trimmed)) result.push('<hr>');
+                    else if (/^\*[^*]+\*$/.test(trimmed)) {
+                        // *heading* on its own line
+                        result.push('<span class="section-title">' + trimmed.replace(/^\*|\*$/g, '') + '</span>');
                     } else if (/^[A-Z][A-Za-z ]{2,40}:$/.test(trimmed)) {
                         result.push('<span class="section-title">' + trimmed + '</span>');
                     } else {
-                        var formatted = trimmed.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-                        result.push(formatted);
+                        var f = trimmed
+                            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                            .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>')
+                            .replace(/(^|[^_])_([^_\n]+)_(?!_)/g, '$1<em>$2</em>');
+                        result.push(f);
                     }
                 }
             }
-            if (inList) {
-                result.push(listType === 'ol' ? '</ol>' : '</ul>');
-            }
+            if (inList) result.push(listType === 'ol' ? '</ol>' : '</ul>');
 
             var html = result.join('<br>');
-            html = html.replace(/@@EMAIL_COMPONENT@@/g, buildEmailComponent());
-            html = html.replace(/(https?:\/\/[^\s<]+)/g, function(url) {
-                return '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>';
+            if (hasEmail) html = html.split(EMAIL_TOKEN).join(buildEmailComponent());
+            html = html.replace(/@@NAV_(\d+)@@/g, function(m, idx) { return navGroups[parseInt(idx, 10)] || ''; });
+            html = html.replace(/(^|[^"'>])(https?:\/\/[^\s<]+)/g, function(m, p, url) {
+                return p + '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>';
             });
-
             html = html.replace(/<br>\s*(<\/?(?:ul|ol)>)/g, '$1');
             html = html.replace(/(<\/(?:ul|ol)>)\s*<br>/g, '$1');
-
+            html = html.replace(/(@@NAV_\d+@@)\s*<br>/g, '$1');
             return html;
         }
 
-        // ================================================================
-        // DISPLAY A MESSAGE
-        // ================================================================
         function displayMessage(doc) {
             var data = doc.data();
             if (!data || !data.text) return;
-
             var msgDiv = document.createElement('div');
             msgDiv.className = 'message ' + (data.isUser ? 'user-message' : 'ai-message');
-
             if (data.isUser) {
                 msgDiv.innerHTML = userIconSVG + '<div class="msg-content">' + escapeHtml(data.text) + '</div>';
             } else {
                 msgDiv.innerHTML = botIconSVG + '<div class="msg-content">' + formatAIResponse(data.text) + '</div>';
             }
-
             var empty = document.getElementById('emptyState');
             if (empty) empty.remove();
-
             chatBox.appendChild(msgDiv);
-
-            if (isFirstLoad) {
-                scrollToBottomImmediate();
-                isFirstLoad = false;
-            } else {
-                scrollToBottom();
-            }
+            if (isFirstLoad) { scrollToBottomImmediate(); isFirstLoad = false; }
+            else scrollToBottom();
         }
 
         function escapeHtml(text) {
@@ -1167,53 +884,37 @@
             return div.innerHTML;
         }
 
-        // ================================================================
-        // TYPING INDICATOR
-        // ================================================================
         function showTyping() {
             removeTyping();
             var div = document.createElement('div');
             div.className = 'typing-indicator';
             div.id = 'typingIndicator';
-            div.innerHTML = botIconSVG + ' Sajvera Campaign is typing' +
-                '<span class="dots"><span></span><span></span><span></span></span>';
+            div.innerHTML = botIconSVG + ' Sajvera Campaign is typing<span class="dots"><span></span><span></span><span></span></span>';
             chatBox.appendChild(div);
             scrollToBottom();
         }
-
         function removeTyping() {
-            var existing = document.getElementById('typingIndicator');
-            if (existing) existing.remove();
+            var e = document.getElementById('typingIndicator');
+            if (e) e.remove();
         }
 
-        // ================================================================
-        // SAVE MESSAGE (unchanged)
-        // ================================================================
         async function saveMessage(text, isUser) {
             if (!currentUserId) return;
-            if (!messagesRef) {
-                messagesRef = db.collection('chats').doc(currentUserId).collection('messages');
-            }
+            if (!messagesRef) messagesRef = db.collection('chats').doc(currentUserId).collection('messages');
             await messagesRef.add({
-                text: text,
-                isUser: isUser,
+                text: text, isUser: isUser,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
         }
 
-        // ================================================================
-        // LOAD CHAT HISTORY
-        // ================================================================
         function loadChatHistory() {
             if (unsubscribe) unsubscribe();
             if (!currentUserId) return;
-
             messagesRef = db.collection('chats').doc(currentUserId).collection('messages');
             var query = messagesRef.orderBy('timestamp', 'asc');
             var firstBatch = true;
-
-            unsubscribe = query.onSnapshot(function(snapshot) {
-                if (snapshot.empty && firstBatch) {
+            unsubscribe = query.onSnapshot(function(snap) {
+                if (snap.empty && firstBatch) {
                     chatBox.innerHTML =
                         '<div class="empty-state" id="emptyState">' +
                             '<span class="ai-avatar empty-avatar">' +
@@ -1222,296 +923,122 @@
                                 '</span>' +
                             '</span>' +
                             '<div class="title">Sajvera Campaign</div>' +
-                            '<div class="sub">Online • 24/7 — ask me anything about the platform</div>' +
+                            '<div class="sub">Online • 24/7 — deposit or withdraw right here in chat</div>' +
                         '</div>';
-
-                    var welcomeText =
+                    var welcome =
                         "Hello 👋 It's me, Sajvera Campaign — your Sajvera Capital assistant.\n\n" +
-                        "I'm here to help you with anything on the platform: deposits, withdrawals, Marketplace plans, " +
-                        "Saving, Loans, Daily Check-in, Treasure Hunt, referrals, and more.\n\n" +
-                        "What would you like to know today? 😊";
-
-                    saveMessage(welcomeText, false).catch(console.warn);
-                    firstBatch = false;
-                    return;
+                        "I can help you with *deposits* and *withdrawals* right here in the chat, plus explain any part of the platform: Marketplace, Saving, Loans, Daily Check-in, Treasure Hunt, referrals, and more.\n\n" +
+                        "Try saying:\n• *deposit*\n• *withdraw*\n• *how do I save?*\n\n" +
+                        "What would you like to do? 😊";
+                    saveMessage(welcome, false).catch(console.warn);
+                    firstBatch = false; return;
                 }
-
-                if (!snapshot.empty) {
+                if (!snap.empty) {
                     var empty = document.getElementById('emptyState');
                     if (empty) empty.remove();
-
                     chatBox.innerHTML = '';
-                    snapshot.forEach(function(doc) { displayMessage(doc); });
+                    snap.forEach(function(doc) { displayMessage(doc); });
                     scrollToBottomImmediate();
                 }
                 firstBatch = false;
-            }, function(error) {
-                console.error('Chat listener error:', error);
-                chatBox.innerHTML =
-                    '<div class="empty-state" id="emptyState">' +
-                    '<div class="title">Error loading chat</div>' +
-                    '<div class="sub">Please refresh the page</div>' +
-                    '</div>';
+            }, function(err) {
+                console.error('Chat listener error:', err);
+                chatBox.innerHTML = '<div class="empty-state"><div class="title">Error loading chat</div><div class="sub">Please refresh the page</div></div>';
             });
         }
 
-        // ================================================================
-        // MARKETPLACE PLANS (optional, for richer answers)
-        // ================================================================
         var marketplacePlansCache = null;
-
         async function fetchMarketplacePlans() {
             if (marketplacePlansCache) return marketplacePlansCache;
             try {
-                var snap = await db.collection('marketplacePlans')
-                    .where('showOnMarketplace', '==', true)
-                    .limit(3)
-                    .get();
+                var snap = await db.collection('marketplacePlans').where('showOnMarketplace', '==', true).limit(3).get();
                 var plans = [];
-                snap.forEach(function(doc) {
-                    var data = doc.data();
-                    data.id = doc.id;
-                    plans.push(data);
-                });
+                snap.forEach(function(doc) { var data = doc.data(); data.id = doc.id; plans.push(data); });
                 marketplacePlansCache = plans;
                 return plans;
-            } catch (err) {
-                console.warn('Marketplace plans not available:', err);
-                return null;
-            }
+            } catch (err) { console.warn('Plans fetch failed:', err); return null; }
         }
 
         // ================================================================
-        // FALLBACK RESPONSE ENGINE
+        // FALLBACK RESPONSE
         // ================================================================
         function getFallbackResponse(userMessage) {
             var raw = String(userMessage || '').trim();
             var msg = raw.toLowerCase();
 
-            if (/^(hi|hello|hey|yo|sup|howdy|hie|hei)[\s!.]*$/i.test(raw)) {
-                return "Hello 👋 Welcome to Sajvera Capital! I'm Sajvera Campaign. 😊 How can I help you today?";
-            }
-            if (/^(good\s*morning|morning)[\s!.]*$/i.test(raw)) {
-                return "Good morning! ☀️😊 Welcome to Sajvera Capital. How can I assist you today?";
-            }
-            if (/^(good\s*afternoon)[\s!.]*$/i.test(raw)) {
-                return "Good afternoon! 😊 Welcome to Sajvera Capital. How can I help you today?";
-            }
-            if (/^(good\s*evening|evening)[\s!.]*$/i.test(raw)) {
-                return "Good evening! 🌙😊 Welcome to Sajvera Capital. What can I help you with?";
-            }
+            if (/^(hi|hello|hey|yo|sup|howdy|hie|hei)[\s!.]*$/i.test(raw)) return "Hello 👋 Welcome to Sajvera Capital! I'm Sajvera Campaign. 😊 How can I help you today?";
+            if (/^(good\s*morning|morning)[\s!.]*$/i.test(raw)) return "Good morning! ☀️😊 Welcome to Sajvera Capital. How can I assist you today?";
+            if (/^(good\s*afternoon)[\s!.]*$/i.test(raw)) return "Good afternoon! 😊 Welcome to Sajvera Capital. How can I help you today?";
+            if (/^(good\s*evening|evening)[\s!.]*$/i.test(raw)) return "Good evening! 🌙😊 Welcome to Sajvera Capital. What can I help you with?";
+            if (msg.indexOf('how are you') !== -1 || msg.indexOf('how you doing') !== -1) return "I'm doing well, thank you! 😊 I'm here and ready to help you with Sajvera Capital. What would you like to know?";
+            if (/^(thanks|thank you|thanx|thx|tysm)[\s!.]*$/i.test(raw) || msg.indexOf('thank you') !== -1) return "You're most welcome! 😊 Anything else I can help with?";
+            if (msg.indexOf('who are you') !== -1 || msg.indexOf('what are you') !== -1 || msg.indexOf('your name') !== -1) return "I'm Sajvera Campaign 🤖 — the virtual assistant for Sajvera Capital. I can help you deposit, withdraw, and understand any part of the platform.";
+            if (msg.indexOf('how was this ai') !== -1 || msg.indexOf('who programmed') !== -1 || msg.indexOf('who built you') !== -1 || msg.indexOf('are you human') !== -1 || msg.indexOf('are you chatgpt') !== -1) return "I'm Sajvera Campaign, the platform's virtual assistant 🤖. I help users understand Sajvera Capital, and I can guide deposits and withdrawals right here. I don't control accounts or approve transactions — admins do that.";
+            if (msg.indexOf('admin') !== -1 || msg.indexOf('owner') !== -1 || msg.indexOf('founder') !== -1 || msg.indexOf('ceo') !== -1 || msg.indexOf('manager') !== -1) return "I can help you with information about the platform, but I don't want to give you unverified personal information. 😊\n\nFor official management or ownership questions, please contact Sajvera Capital through the official Support page.\n\n[EMAIL_CONTACT]";
+            if (msg.indexOf('whatsapp') !== -1 || msg.indexOf('group link') !== -1 || msg.indexOf('join group') !== -1 || msg.indexOf('telegram') !== -1) return "For official group and channel links, please check the Support page — that's where Sajvera Capital shares verified contact details. 📢\n\n[EMAIL_CONTACT]";
+            if (msg.indexOf('contact') !== -1 || msg.indexOf('support') !== -1 || msg.indexOf('help me') !== -1 || msg.indexOf('customer care') !== -1) return "You can reach the official Sajvera Capital support team by email here:\n\n[EMAIL_CONTACT]\n\nPlease include your registered name and a short description of your issue. 🆘";
+            if (msg.indexOf('error') !== -1 || msg.indexOf('not working') !== -1 || msg.indexOf('failed') !== -1 || msg.indexOf('broken') !== -1 || msg.indexOf('stuck') !== -1) return "I'm sorry you're having trouble 😟. Please tell me which section (Deposit, Withdraw, etc.) and what error you see.\n\nIf it's an account or transaction issue I can't fix here, please contact Support:\n\n[EMAIL_CONTACT]";
 
-            if (msg.indexOf('how are you') !== -1 || msg.indexOf('how you doing') !== -1 || msg.indexOf('how do you do') !== -1 || msg.indexOf('howfar') !== -1) {
-                return "I'm doing well, thank you! 😊 I'm here and ready to help you with Sajvera Capital. What would you like to know?";
-            }
+            // Deposit — now with AI-flow suggestion
+            if (msg.indexOf('deposit') !== -1) return "You can deposit right here in the chat 😊 — just type *deposit* and I'll walk you through it step by step.\n\nOr use the Deposit page from your dashboard if you prefer.\n\nMinimum: *1 ZMW* — no maximum.";
 
-            if (/^(thanks|thank you|thanx|thx|tysm)[\s!.]*$/i.test(raw) || msg.indexOf('thank you') !== -1) {
-                return "You're most welcome! 😊 If there's anything else you'd like to ask about Sajvera Capital, I'm right here.";
-            }
+            // Withdraw — with time window + AI-flow suggestion
+            if (msg.indexOf('withdraw') !== -1 || msg.indexOf('cash out') !== -1) return "You can withdraw right here in the chat 😊 — just type *withdraw* and I'll guide you.\n\n📌 *Important:*\n• A *10% processing fee* applies.\n• Withdrawals are allowed between *09:00 and 17:00* (9 AM – 5 PM).\n• Once submitted, it shows in your History as *Pending* until an admin approves it.\n\nMoney usually reaches your account *within 24 hours* after approval.";
 
-            if (msg.indexOf('who are you') !== -1 || msg.indexOf('what are you') !== -1 || msg.indexOf('your name') !== -1) {
-                return "I'm Sajvera Campaign 🤖 — the virtual assistant for Sajvera Capital. I help users understand the platform's features, navigation, and general information. I can guide you, but I don't control accounts, balances or transactions.";
-            }
-
-            if (msg.indexOf('how was this ai') !== -1 || msg.indexOf('who programmed') !== -1 || msg.indexOf('who built you') !== -1 ||
-                msg.indexOf('what ai are you') !== -1 || msg.indexOf('how does this assistant') !== -1 ||
-                msg.indexOf('what technology') !== -1 || msg.indexOf('are you chatgpt') !== -1 || msg.indexOf('are you human') !== -1) {
-                return "I'm Sajvera Campaign, the platform's virtual assistant 🤖. I'm designed to help users understand Sajvera Capital's features, navigation and general platform information.\n\n" +
-                       "I can explain available features and guide you to the correct section, but I don't personally control accounts, approve transactions or change balances.\n\n" +
-                       "For deeper technical questions, please reach out to official support.";
-            }
-
-            if (msg.indexOf('admin') !== -1 || msg.indexOf('owner') !== -1 || msg.indexOf('founder') !== -1 ||
-                msg.indexOf('ceo') !== -1 || msg.indexOf('manager') !== -1 || msg.indexOf('who manages') !== -1 ||
-                msg.indexOf('speak to the owner') !== -1 || msg.indexOf('admin number') !== -1) {
-                return "I can help you with information about the platform, but I don't want to give you unverified personal information. 😊\n\n" +
-                       "For official management or ownership questions, please contact Sajvera Capital through the official Support page.\n\n[EMAIL_CONTACT]";
-            }
-
-            if (msg.indexOf('whatsapp') !== -1 || msg.indexOf('whats app') !== -1 || msg.indexOf('group link') !== -1 ||
-                msg.indexOf('join group') !== -1 || msg.indexOf('channel link') !== -1 || msg.indexOf('telegram') !== -1) {
-                return "For official group and channel links, please check the Support page — that's where Sajvera Capital shares verified contact details. 📢\n\n" +
-                       "That's something our admin/management team will need to confirm for you. 😊 You can reach them here:\n\n[EMAIL_CONTACT]";
-            }
-
-            if (msg.indexOf('contact') !== -1 || msg.indexOf('support') !== -1 || msg.indexOf('help me') !== -1 ||
-                msg.indexOf('customer care') !== -1 || msg.indexOf('reach someone') !== -1) {
-                return "You can reach the official Sajvera Capital support team by email here:\n\n[EMAIL_CONTACT]\n\n" +
-                       "Please include your registered name and a short description of your issue, and the team will respond as soon as possible. 🆘";
-            }
-
-            if (msg.indexOf('error') !== -1 || msg.indexOf('not working') !== -1 || msg.indexOf("isn't working") !== -1 ||
-                msg.indexOf('failed') !== -1 || msg.indexOf('blank') !== -1 || msg.indexOf('cannot claim') !== -1 ||
-                msg.indexOf("can't claim") !== -1 || msg.indexOf('broken') !== -1 || msg.indexOf('stuck') !== -1) {
-                return "I'm sorry you're having trouble 😟. Let's narrow it down.\n\n" +
-                       "Please tell me:\n• Which section are you using? (Deposit, Withdraw, Marketplace, etc.)\n• What exact error message do you see?\n\n" +
-                       "If it's an account, transaction, balance or platform issue that I can't resolve here, please contact the official Support team so an admin can assist you:\n\n[EMAIL_CONTACT]";
-            }
-
-            if (msg.indexOf('deposit') !== -1) {
-                return "Sure 😊 To make a deposit:\n\n" +
-                       "1. Open Deposit from your dashboard.\n" +
-                       "2. Choose your network (MTN, Airtel, or Zamtel).\n" +
-                       "3. Enter your phone number (9 digits after +260).\n" +
-                       "4. Enter the amount (minimum 70 ZMW).\n" +
-                       "5. Confirm you're ready to pay.\n" +
-                       "6. Send the exact amount to the agent details shown.\n" +
-                       "7. Paste the SMS confirmation and submit.\n\n" +
-                       "Admin approval is usually processed within 24 hours, then your balance is credited. ✅";
-            }
-
-            if (msg.indexOf('withdraw') !== -1 || msg.indexOf('cash out') !== -1) {
-                return "Here's how withdrawals work 😊:\n\n" +
-                       "1. Open Withdraw from your dashboard.\n" +
-                       "2. Choose network or bank.\n" +
-                       "3. Enter your account details.\n" +
-                       "4. Enter the amount (minimum 20 ZMW). A 20% fee applies.\n" +
-                       "5. You need at least one completed deposit and one active investment, and no active loans.\n\n" +
-                       "Withdrawals are processed Monday–Friday. Once approved, the money usually reaches your account within 24 hours. ✅\n\n" +
-                       "If your withdrawal takes longer, please contact support with your transaction details:\n\n[EMAIL_CONTACT]";
-            }
-
-            if (msg.indexOf('history') !== -1 || msg.indexOf('transaction') !== -1 || msg.indexOf('record') !== -1) {
-                return "You can see all your transactions in the History section 📊 — deposits, withdrawals, investments, savings, loans, bonuses and more.\n\nEverything is listed with dates and amounts so you can track your activity.";
-            }
-
-            if (msg.indexOf('treasure') !== -1) {
-                return "🎁 Treasure Hunt is a reward feature on Sajvera Capital.\n\n" +
-                       "You receive a 7-character treasure code (letters and numbers). Paste it into the Treasure Hunt page to claim your reward. Each code can only be used once, and the reward is added directly to your wallet balance.\n\n" +
-                       "Codes are usually shared through official channels — check the Support page for verified links.";
-            }
-
-            if (msg.indexOf('daily check') !== -1 || msg.indexOf('check-in') !== -1 || msg.indexOf('check in') !== -1 || msg.indexOf('checkin') !== -1) {
-                return "📅 Daily Check-in is a 7-day reward cycle.\n\n" +
-                       "You check in once per day and claim your reward in order. The 7th day typically gives the biggest reward. After Day 7, the cycle restarts from Day 1.\n\n" +
-                       "Open the Daily Check-in page from your dashboard to claim today's reward.";
-            }
-
+            if (msg.indexOf('history') !== -1 || msg.indexOf('transaction') !== -1 || msg.indexOf('record') !== -1) return "You can see all your transactions in the History section 📊 — deposits, withdrawals, investments, savings, loans, bonuses and more.\n\nWithdrawals and deposits appear there as *Pending* until an admin approves them.";
+            if (msg.indexOf('treasure') !== -1) return "🎁 Treasure Hunt is a reward feature on Sajvera Capital.\n\nYou receive a 7-character treasure code and paste it into the Treasure Hunt page to claim your reward. Each code can only be used once.";
+            if (msg.indexOf('daily check') !== -1 || msg.indexOf('check-in') !== -1 || msg.indexOf('check in') !== -1 || msg.indexOf('checkin') !== -1) return "📅 Daily Check-in is a 7-day reward cycle.\n\nYou check in once per day and claim your reward in order. The 7th day usually gives the biggest reward. After Day 7, the cycle restarts from Day 1.";
             if (msg.indexOf('marketplace') !== -1 || msg.indexOf('invest') !== -1 || msg.indexOf('plan') !== -1 || msg.indexOf('buy') !== -1) {
-                var reply = "🛒 Marketplace is where investment plans live.\n\n" +
-                            "Each plan offers two actions:\n" +
-                            "• Invest Now — earn its configured daily return.\n" +
-                            "• Buy Now — purchase the plan and receive capital + profit at maturity.\n\n" +
-                            "All plan details (amount, duration, daily return, release dates) are shown directly on the card.";
-
+                var reply = "🛒 Marketplace is where investment plans live.\n\nEach plan offers two actions:\n• Invest Now — earn its configured daily return.\n• Buy Now — receive capital + profit at maturity.\n\nAll plan details are shown on the card.";
                 if (marketplacePlansCache && marketplacePlansCache.length > 0) {
                     var p = marketplacePlansCache[0];
-                    reply += "\n\nExample: " + (p.planName || 'Plan') + " — K" +
-                             (p.investmentPrice || 0) + " · " + (p.earningDays || 0) +
-                             " days · daily return K" + (p.dailyReturn || 0) + ".";
+                    reply += "\n\nExample: *" + (p.planName || 'Plan') + "* — K" + (p.investmentPrice || 0) + " · " + (p.earningDays || 0) + " days · daily return K" + (p.dailyReturn || 0) + ".";
                 }
                 return reply;
             }
-
-            if (msg.indexOf('saving') !== -1 || msg.indexOf('save') !== -1 || msg.indexOf('wealth') !== -1 || msg.indexOf('reserve') !== -1 || msg.indexOf('growth') !== -1) {
-                return "💾 Sajvera Capital offers three saving branches:\n\n" +
-                       "• Wealth — long-term savings (60 to 360 days).\n" +
-                       "• Reserve — secure savings with maturity interest (minimum K100).\n" +
-                       "• Growth — goal-based savings with tiered interest (minimum K350).\n\n" +
-                       "Open the Saving page to see the full details and start saving.";
-            }
-
-            if (msg.indexOf('loan') !== -1 || msg.indexOf('borrow') !== -1 || msg.indexOf('flex') !== -1 || msg.indexOf('goldmine') !== -1) {
-                return "Sajvera Capital offers three loan branches:\n\n" +
-                       "• Sajvera Flex — flexible support.\n" +
-                       "• PureOre Support — short-term support.\n" +
-                       "• GoldMine Advance — premium loans.\n\n" +
-                       "Eligibility depends on your activity balance, team members and qualifying investments. Open the Loans page to check your eligibility and apply.";
-            }
-
-            if (msg.indexOf('referral') !== -1 || msg.indexOf('refer') !== -1 || msg.indexOf('team') !== -1 || msg.indexOf('invite') !== -1) {
-                return "👥 Your referral code is in the Team page. Share your unique link with friends.\n\n" +
-                       "When someone registers with your code, makes their first completed deposit, and purchases an investment plan, you receive a 5% bonus on that deposit.\n\nThere's no limit on team size — the bonus is added automatically to your balance.";
-            }
-
-            if (msg.indexOf('income') !== -1 || msg.indexOf('claim') !== -1 || msg.indexOf('profit') !== -1 || msg.indexOf('earning') !== -1) {
-                return "📊 The Income page shows your active investments and daily income.\n\nYou can claim daily income from active plans once every 24 hours on weekdays. Open the Income page to see your active plans and claim when available.";
-            }
-
-            if (msg.indexOf('news') !== -1 || msg.indexOf('announcement') !== -1 || msg.indexOf('update') !== -1) {
-                return "📰 The News page has official announcements, updates and new opportunities. Check it regularly to stay informed.";
-            }
-
-            if (msg.indexOf('voucher') !== -1) {
-                return "🎟 Vouchers are available in the Voucher section. You can redeem valid vouchers there according to the rules shown on the page.";
-            }
-
-            if (msg.indexOf('password') !== -1) {
-                return "To change your password:\n\n1. Go to the Me page.\n2. Tap Change Password.\n3. Enter your email, old password, new password (min 6 characters) and confirm.\n\nYou'll be logged out after a successful change.\n\nIf you forgot your password, please contact support:\n\n[EMAIL_CONTACT]";
-            }
-
-            if (msg.indexOf('profile') !== -1 || msg.indexOf('my account') !== -1 || msg.indexOf('me page') !== -1) {
-                return "Your Me page shows your profile, balance, referral code, and options like Change Password. You can update your details there.";
-            }
-
-            if (msg.indexOf('what is this platform') !== -1 || msg.indexOf('what is sajvera') !== -1 || msg.indexOf('about the platform') !== -1 || msg.indexOf('tell me about') !== -1) {
-                return "Sajvera Capital is a financial platform where you can:\n\n" +
-                       "• Invest through Marketplace plans.\n" +
-                       "• Save through three saving branches.\n" +
-                       "• Apply for loans.\n" +
-                       "• Earn bonuses through referrals and team building.\n" +
-                       "• Claim daily rewards through Daily Check-in and Treasure Hunt.\n\n" +
-                       "All transactions are tracked in History, and you can manage everything from your dashboard.";
-            }
-
-            return "I don't want to guess and give you the wrong information. 😊\n\n" +
-                   "For the most accurate answer, please contact Sajvera Capital through the official Support page:\n\n[EMAIL_CONTACT]\n\n" +
-                   "You can also ask me about deposits, withdrawals, Marketplace, Saving, Loans, Daily Check-in, Treasure Hunt, referrals and more.";
+            if (msg.indexOf('saving') !== -1 || msg.indexOf('save') !== -1 || msg.indexOf('wealth') !== -1 || msg.indexOf('reserve') !== -1 || msg.indexOf('growth') !== -1) return "💾 Sajvera Capital offers three saving branches:\n\n• Wealth — long-term savings (60 to 360 days).\n• Reserve — secure savings with maturity interest (min K100).\n• Growth — goal-based savings with tiered interest (min K350).";
+            if (msg.indexOf('loan') !== -1 || msg.indexOf('borrow') !== -1 || msg.indexOf('flex') !== -1 || msg.indexOf('goldmine') !== -1) return "Sajvera Capital offers three loan branches:\n\n• Sajvera Flex — flexible support.\n• PureOre Support — short-term support.\n• GoldMine Advance — premium loans.\n\nEligibility depends on your balance, team and investments. Open the Loans page to apply.";
+            if (msg.indexOf('referral') !== -1 || msg.indexOf('refer') !== -1 || msg.indexOf('team') !== -1 || msg.indexOf('invite') !== -1) return "👥 Your referral code is in the Team page. Share your unique link.\n\nWhen someone registers with your code, makes their first completed deposit, and buys an investment plan, you earn a 5% bonus on that deposit.";
+            if (msg.indexOf('income') !== -1 || msg.indexOf('claim') !== -1 || msg.indexOf('profit') !== -1 || msg.indexOf('earning') !== -1) return "📊 The Income page shows your active investments and daily income. You can claim daily income once every 24 hours on weekdays.";
+            if (msg.indexOf('news') !== -1 || msg.indexOf('announcement') !== -1 || msg.indexOf('update') !== -1) return "📰 The News page has official announcements and updates. Check it regularly to stay informed.";
+            if (msg.indexOf('voucher') !== -1) return "🎟 Vouchers are available in the Voucher section. You can redeem valid vouchers there.";
+            if (msg.indexOf('password') !== -1) return "To change your password:\n\n1. Go to the Me page.\n2. Tap Change Password.\n3. Enter your email, old password, new password and confirm.\n\nIf you forgot your password, please contact support:\n\n[EMAIL_CONTACT]";
+            if (msg.indexOf('profile') !== -1 || msg.indexOf('my account') !== -1 || msg.indexOf('me page') !== -1) return "Your Me page shows your profile, balance, referral code and options like Change Password.";
+            if (msg.indexOf('what is this platform') !== -1 || msg.indexOf('what is sajvera') !== -1 || msg.indexOf('about the platform') !== -1 || msg.indexOf('tell me about') !== -1) return "Sajvera Capital is a financial platform where you can:\n\n• Invest through Marketplace plans.\n• Save through three saving branches.\n• Apply for loans.\n• Earn bonuses through referrals.\n• Claim daily rewards through Daily Check-in and Treasure Hunt.\n\nAnd now, you can also *deposit* or *withdraw* right here in the chat!";
+            return "I don't want to guess and give you the wrong information. 😊\n\nFor the most accurate answer, please contact Sajvera Capital through the official Support page:\n\n[EMAIL_CONTACT]\n\nYou can also try:\n• *deposit*\n• *withdraw*\n• ask about Marketplace, Saving, Loans, Daily Check-in, Treasure Hunt, referrals…";
         }
 
-        // ================================================================
-        // GEMINI API (optional — falls back to local engine if unavailable)
-        // ================================================================
         async function getGeminiResponse(userMessage) {
-            if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
-                return null;
-            }
-
+            if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') return null;
             try {
-                var systemPrompt =
+                var sysPrompt =
                     "You are Sajvera Campaign, the virtual assistant for Sajvera Capital. " +
-                    "Speak naturally and professionally, like a real helpful assistant. " +
-                    "Use emojis sparingly (👋, 😊, 💰, 📥, 📤, 🎁, 📅, 🛒, 🆘). " +
-                    "Key facts you may use:\n" +
-                    "- Support email only: Pureorecapital@gmail.com. Do not invent any other contact.\n" +
-                    "- Withdrawals: minimum 20 ZMW, 20% fee, processed Monday–Friday, money usually reaches the account within 24 hours after approval.\n" +
-                    "- Deposits: minimum 70 ZMW, admin approval usually within 24 hours.\n" +
-                    "- Marketplace plans offer Invest Now (daily returns) or Buy Now (maturity payout).\n" +
-                    "- Saving has three branches: Wealth, Reserve, Growth.\n" +
+                    "Speak naturally and professionally. Use emojis sparingly. " +
+                    "Key facts:\n" +
+                    "- Support email only: Pureorecapital@gmail.com.\n" +
+                    "- Withdrawals: 10% fee, allowed 09:00–17:00, money reaches account within 24h after approval.\n" +
+                    "- Deposits: minimum 1 ZMW, no maximum. Admin approval usually within 24h.\n" +
+                    "- Marketplace offers Invest Now (daily returns) and Buy Now (maturity payout).\n" +
+                    "- Saving: Wealth, Reserve, Growth.\n" +
                     "- Loans: Sajvera Flex, PureOre Support, GoldMine Advance.\n" +
-                    "- Treasure Hunt uses 7-character codes, each usable once.\n" +
+                    "- Treasure Hunt: 7-character codes, one-time use.\n" +
                     "- Daily Check-in: 7-day cycle, resets after Day 7.\n" +
-                    "- Never claim to have modified accounts, balances, or transactions.\n" +
-                    "- For admin/owner questions, say you can't give unverified personal information and direct to Support.\n" +
-                    "- Never reveal API keys, Firebase credentials, or internal details.\n" +
-                    "Answer the user's question directly and helpfully.\n\n" +
-                    "User: " + userMessage;
-
-                var response = await fetch(GEMINI_URL, {
+                    "- Never claim to have modified accounts or balances.\n" +
+                    "- For admin/owner questions, direct to Support.\n" +
+                    "Answer directly.\n\nUser: " + userMessage;
+                var res = await fetch(GEMINI_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: systemPrompt }] }]
-                    })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: sysPrompt }] }] })
                 });
-
-                if (!response.ok) {
-                    console.warn('Gemini API error:', response.status);
-                    return null;
-                }
-
-                var data = await response.json();
+                if (!res.ok) return null;
+                var data = await res.json();
                 if (data.candidates && data.candidates.length > 0) {
-                    var content = data.candidates[0].content;
-                    if (content && content.parts && content.parts.length > 0) {
-                        return content.parts[0].text;
-                    }
+                    var c = data.candidates[0].content;
+                    if (c && c.parts && c.parts.length > 0) return c.parts[0].text;
                 }
                 return null;
-            } catch (err) {
-                console.warn('Gemini API error:', err);
-                return null;
-            }
+            } catch (err) { console.warn('Gemini error:', err); return null; }
         }
 
         // ================================================================
@@ -1520,39 +1047,34 @@
         async function sendMessage(text) {
             if (!text || !text.trim()) return;
             if (!currentUserId) return;
-
             var cleanText = text.trim();
-
             userInput.disabled = true;
             sendBtn.disabled = true;
-
             await saveMessage(cleanText, true);
             showTyping();
-
             try {
-                var reply = await getGeminiResponse(cleanText);
-
-                if (!reply || !reply.trim()) {
-                    reply = getFallbackResponse(cleanText);
+                // 1) Check flow FIRST
+                var flowReply = await handleAssistantFlow(cleanText);
+                var reply;
+                if (flowReply) {
+                    reply = flowReply;
+                } else {
+                    // 2) Otherwise, Gemini → fallback
+                    reply = await getGeminiResponse(cleanText);
+                    if (!reply || !reply.trim()) reply = getFallbackResponse(cleanText);
+                    var navBtns = getNavButtons(cleanText);
+                    if (navBtns.length > 0) reply = reply + '\n\n' + NAV_OPEN + navBtns.join(' ') + NAV_CLOSE;
                 }
-
-                var navBtns = getNavButtons(cleanText);
-                if (navBtns.length > 0) {
-                    reply = reply + '\n\n' + navBtns.join(' ');
-                }
-
                 removeTyping();
                 await saveMessage(reply, false);
-
                 userInput.disabled = false;
                 sendBtn.disabled = false;
                 userInput.focus();
-
             } catch (err) {
                 console.error('sendMessage error:', err);
                 removeTyping();
-                var fallbackReply = getFallbackResponse(cleanText);
-                await saveMessage(fallbackReply, false);
+                var fb = getFallbackResponse(cleanText);
+                await saveMessage(fb, false);
                 userInput.disabled = false;
                 sendBtn.disabled = false;
                 userInput.focus();
@@ -1561,116 +1083,80 @@
 
         function handleSend() {
             var text = userInput.value.trim();
-            if (text) {
-                sendMessage(text);
-                userInput.value = '';
-            }
+            if (text) { sendMessage(text); userInput.value = ''; }
         }
 
         // ================================================================
-        // COPY EMAIL (delegated)
+        // COPY EMAIL
         // ================================================================
         document.addEventListener('click', function(e) {
-            var target = e.target.closest('#copyEmailBtn');
-            if (!target) return;
-
+            var t = e.target.closest('#copyEmailBtn');
+            if (!t) return;
             var email = SUPPORT_EMAIL;
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(email).then(function() {
                     showToast('Email copied', false);
-                    target.classList.add('copy-success');
-                    setTimeout(function() { target.classList.remove('copy-success'); }, 2000);
-                }).catch(function() {
-                    fallbackCopy(email, target);
-                });
-            } else {
-                fallbackCopy(email, target);
-            }
+                    t.classList.add('copy-success');
+                    setTimeout(function() { t.classList.remove('copy-success'); }, 2000);
+                }).catch(function() { fallbackCopy(email, t); });
+            } else fallbackCopy(email, t);
         });
-
         function fallbackCopy(text, btn) {
-            var textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
+            var ta = document.createElement('textarea');
+            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
             try {
                 document.execCommand('copy');
                 showToast('Email copied', false);
                 btn.classList.add('copy-success');
                 setTimeout(function() { btn.classList.remove('copy-success'); }, 2000);
-            } catch (e) {
-                showToast('Could not copy — please copy manually.', true);
-            }
-            document.body.removeChild(textarea);
+            } catch (e) { showToast('Could not copy.', true); }
+            document.body.removeChild(ta);
         }
 
         // ================================================================
-        // AUTH STATE (unchanged flow)
+        // AUTH
         // ================================================================
         var authResolved = false;
         var redirectTimeout = null;
-
         auth.onAuthStateChanged(async function(user) {
             if (user) {
                 authResolved = true;
-                if (redirectTimeout) {
-                    clearTimeout(redirectTimeout);
-                    redirectTimeout = null;
-                }
+                if (redirectTimeout) { clearTimeout(redirectTimeout); redirectTimeout = null; }
                 currentUserId = user.uid;
                 watchBlockStatus(currentUserId);
-
                 fetchMarketplacePlans();
-
+                loadDepositRulesForAssistant();
                 loadChatHistory();
                 setTimeout(function() { userInput.focus(); }, 600);
             } else {
                 if (!authResolved) {
                     if (!redirectTimeout) {
                         redirectTimeout = setTimeout(function() {
-                            if (!auth.currentUser) {
-                                window.location.href = 'login.html';
-                            }
+                            if (!auth.currentUser) window.location.href = 'login.html';
                         }, 2000);
                     }
-                } else {
-                    window.location.href = 'login.html';
-                }
+                } else window.location.href = 'login.html';
             }
-        }, function(error) {
-            console.error('Auth state error:', error);
-            window.location.href = 'login.html';
-        });
+        }, function(err) { console.error('Auth error:', err); window.location.href = 'login.html'; });
 
         // ================================================================
-        // EVENT LISTENERS
+        // EVENTS
         // ================================================================
         sendBtn.addEventListener('click', handleSend);
         userInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-            }
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
         });
-
-        backBtn.addEventListener('click', function() {
-            window.location.href = 'dashboard.html';
-        });
-
+        backBtn.addEventListener('click', function() { window.location.href = 'dashboard.html'; });
         var resizeTimer;
         window.addEventListener('resize', function() {
             clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function() {
-                scrollToBottomImmediate();
-            }, 200);
+            resizeTimer = setTimeout(function() { scrollToBottomImmediate(); }, 200);
         });
 
-        console.log('✨ Sajvera Campaign assistant loaded');
-        console.log('🎨 AI avatar: purple/blue symbol inside emerald-framed dark green circle');
-        console.log('📧 Support email: ' + SUPPORT_EMAIL);
+        console.log('✨ Sajvera Campaign — deposit & withdraw enabled in chat');
+        console.log('📥 Deposits save to "deposits" collection · 📤 Withdrawals save to "withdrawals"');
+        console.log('⏰ Withdrawal window: 09:00–17:00');
     </script>
-
 </body>
 </html>
