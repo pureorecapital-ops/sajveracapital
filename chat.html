@@ -1,1162 +1,956 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-    <meta name="referrer" content="no-referrer" />
-    <title>Sajvera Campaign | Sajvera Capital</title>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <style>
-        :root {
-            --emerald-200: #a7f3d0; --emerald-300: #6ee7b7; --emerald-400: #34d399;
-            --emerald-500: #10b981; --emerald-600: #059669; --emerald-700: #047857;
-            --gold-200: #fff3cf; --gold-300: #ffe9a3; --gold-400: #f7d774; --gold-500: #f5c542;
-            --brand-violet: #7c6df0; --brand-cyan: #5dd9f2;
-            --text: #ffffff; --muted: rgba(255,255,255,0.62); --faint: rgba(255,255,255,0.42);
-        }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        html, body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            height: 100%; color: var(--text); background-color: #030604;
-            overflow: hidden; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
-        }
-        body {
-            background-image:
-                radial-gradient(700px 420px at 50% -10%, rgba(14,58,40,0.7) 0%, rgba(3,6,4,0) 68%),
-                radial-gradient(560px 400px at 100% 110%, rgba(16,185,129,0.08) 0%, rgba(3,6,4,0) 62%),
-                linear-gradient(180deg, #05130d 0%, #030a07 55%, #020504 100%);
-            background-repeat: no-repeat; background-size: 100% 100%;
-        }
-        .ai-avatar {
-            flex-shrink: 0; border-radius: 50%;
-            background: radial-gradient(circle at 50% 40%, #0a2a1d 0%, #030a07 100%);
-            border: 2px solid rgba(16,185,129,0.55); padding: 3px;
-            display: inline-flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 16px -3px rgba(16,185,129,0.75), 0 0 30px -10px rgba(16,185,129,0.55),
-                        inset 0 0 8px rgba(16,185,129,0.20);
-        }
-        .ai-avatar .avatar-symbol {
-            width: 100%; height: 100%; border-radius: 50%;
-            background: linear-gradient(135deg, var(--brand-violet) 0%, var(--brand-cyan) 100%);
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.15);
-        }
-        .ai-avatar .avatar-symbol svg {
-            width: 58%; height: 58%; stroke: #fff; stroke-width: 2.4; fill: none;
-            stroke-linecap: round; stroke-linejoin: round;
-            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
-        }
-        .container {
-            max-width: 640px; margin: 0 auto; padding: 12px;
-            height: 100vh; height: 100dvh;
-            display: flex; flex-direction: column; position: relative;
-        }
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            gap: 10px; flex-shrink: 0; margin-bottom: 10px;
-        }
-        .back-btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25);
-            border-radius: 999px; padding: 8px 14px 8px 11px;
-            font-size: 0.8rem; font-weight: 600; color: #c9f7e4; cursor: pointer;
-            font-family: inherit; text-decoration: none;
-            transition: background 0.2s, border-color 0.2s, transform 0.2s;
-        }
-        .back-btn:hover { background: rgba(16,185,129,0.16); border-color: rgba(16,185,129,0.5); transform: translateX(-3px); }
-        .back-btn svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-        .assistant-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-        .assistant-avatar { width: 44px; height: 44px; }
-        .assistant-meta { min-width: 0; }
-        .assistant-name { font-size: 0.92rem; font-weight: 800; letter-spacing: -0.01em; color: #fff; white-space: nowrap; }
-        .assistant-status {
-            display: inline-flex; align-items: center; gap: 6px; margin-top: 2px;
-            font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em;
-            color: var(--emerald-300); text-transform: uppercase; white-space: nowrap;
-        }
-        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,0.9); animation: statusPulse 2s infinite; }
-        @keyframes statusPulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.55); } 70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
-        .chat-box {
-            flex: 1 1 auto; overflow-y: auto; overflow-x: hidden;
-            padding: 6px 2px 12px; display: flex; flex-direction: column; gap: 10px;
-            min-height: 0; -webkit-overflow-scrolling: touch; scroll-behavior: auto;
-        }
-        .chat-box::-webkit-scrollbar { width: 4px; }
-        .chat-box::-webkit-scrollbar-track { background: transparent; }
-        .chat-box::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.25); border-radius: 10px; }
-        .message {
-            max-width: 86%; padding: 11px 14px; border-radius: 16px;
-            word-wrap: break-word; line-height: 1.6; font-size: 0.9rem;
-            animation: msgFadeIn 0.28s ease; display: flex; align-items: flex-start;
-            gap: 9px; position: relative;
-        }
-        @keyframes msgFadeIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        .user-message {
-            align-self: flex-end;
-            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-            color: #fff; border-bottom-right-radius: 5px;
-            box-shadow: 0 8px 24px -12px rgba(16,185,129,0.9), inset 0 1px 0 rgba(255,255,255,0.18);
-        }
-        .user-message .msg-icon { flex-shrink: 0; width: 26px; height: 26px; stroke: #fff; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; margin-top: 1px; opacity: 0.9; }
-        .ai-message {
-            align-self: flex-start;
-            background: linear-gradient(155deg, #0a2619 0%, #051510 100%);
-            color: #fff; border: 1px solid rgba(16,185,129,0.30); border-bottom-left-radius: 5px;
-            box-shadow: 0 10px 28px -20px rgba(0,0,0,0.95), 0 0 22px -14px rgba(16,185,129,0.6),
-                        inset 0 1px 0 rgba(255,255,255,0.04);
-        }
-        .msg-avatar { width: 26px; height: 26px; padding: 2px; border-width: 1.5px; margin-top: 2px; box-shadow: 0 0 10px -2px rgba(16,185,129,0.75), 0 0 18px -6px rgba(16,185,129,0.55), inset 0 0 5px rgba(16,185,129,0.20); }
-        .ai-message .msg-content { flex: 1; min-width: 0; }
-        .ai-message .section-title { display: block; margin-top: 8px; font-weight: 800; color: var(--gold-300); }
-        .ai-message strong { color: var(--gold-300); font-weight: 800; }
-        .ai-message em { color: var(--emerald-300); font-style: normal; font-weight: 700; }
-        .ai-message a { color: var(--emerald-300); text-decoration: underline; text-underline-offset: 2px; }
-        .ai-message ul, .ai-message ol { padding-left: 1.4rem; margin: 6px 0; }
-        .ai-message li { margin-bottom: 3px; }
-        .ai-message hr { border: 0; border-top: 1px solid rgba(16,185,129,0.15); margin: 8px 0; }
-        .typing-indicator {
-            align-self: flex-start;
-            background: linear-gradient(155deg, #0a2619 0%, #051510 100%);
-            border: 1px solid rgba(16,185,129,0.30); border-radius: 16px;
-            border-bottom-left-radius: 5px; padding: 11px 14px;
-            color: rgba(255,255,255,0.7); font-size: 0.82rem;
-            display: flex; align-items: center; gap: 9px; animation: msgFadeIn 0.3s ease;
-            box-shadow: 0 10px 28px -20px rgba(0,0,0,0.95), 0 0 22px -14px rgba(16,185,129,0.6);
-        }
-        .typing-indicator .dots { display: inline-flex; gap: 4px; margin-left: 2px; }
-        .typing-indicator .dots span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--emerald-400); opacity: 0.35; animation: dotPulse 1.2s ease-in-out infinite; }
-        .typing-indicator .dots span:nth-child(2) { animation-delay: 0.18s; }
-        .typing-indicator .dots span:nth-child(3) { animation-delay: 0.36s; }
-        @keyframes dotPulse { 0%, 100% { opacity: 0.28; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
-        .empty-state { text-align: center; padding: 30px 16px; color: rgba(255,255,255,0.4); align-self: center; margin: auto 0; }
-        .empty-state .empty-avatar { width: 76px; height: 76px; margin: 0 auto 14px; border-width: 3px; padding: 5px; box-shadow: 0 0 26px -4px rgba(16,185,129,0.85), 0 0 50px -14px rgba(16,185,129,0.55), inset 0 0 12px rgba(16,185,129,0.25); }
-        .empty-state .title { font-size: 1rem; font-weight: 800; color: #fff; }
-        .empty-state .sub { font-size: 0.8rem; color: var(--faint); margin-top: 4px; }
-        .input-area {
-            display: flex; gap: 8px;
-            background: linear-gradient(150deg, rgba(10,34,24,0.9) 0%, rgba(4,12,9,0.95) 100%);
-            border-radius: 60px; padding: 5px 5px 5px 16px; align-items: center;
-            border: 1.5px solid rgba(16,185,129,0.22); flex-shrink: 0;
-            transition: border-color 0.25s ease, box-shadow 0.25s ease;
-        }
-        .input-area:focus-within { border-color: rgba(16,185,129,0.7); box-shadow: 0 0 0 4px rgba(16,185,129,0.10), 0 0 26px -6px rgba(16,185,129,0.55); }
-        .input-area input { flex: 1; background: transparent; border: none; padding: 12px 0; color: #fff; font-size: 0.9rem; font-family: inherit; outline: none; min-width: 0; }
-        .input-area input::placeholder { color: rgba(255,255,255,0.32); }
-        .send-btn {
-            background: linear-gradient(135deg, #10b981 0%, #059669 55%, #047857 100%);
-            border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
-            display: inline-flex; align-items: center; justify-content: center;
-            transition: transform 0.15s, filter 0.2s, box-shadow 0.2s; flex-shrink: 0; color: #fff;
-            box-shadow: 0 8px 20px -10px rgba(16,185,129,0.95), inset 0 1px 0 rgba(255,255,255,0.25);
-            -webkit-tap-highlight-color: transparent;
-        }
-        .send-btn:hover { filter: brightness(1.08); }
-        .send-btn:active { transform: scale(0.94); }
-        .send-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-        .send-btn svg { width: 18px; height: 18px; fill: currentColor; transform: translateX(1px); }
-        .nav-btn-group { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
-        .nav-btn {
-            display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;
-            border-radius: 999px; font-size: 0.72rem; font-weight: 800;
-            font-family: inherit; cursor: pointer; transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
-            text-decoration: none; letter-spacing: 0.02em;
-            background: rgba(16,185,129,0.10); border: 1px solid rgba(52,211,153,0.42);
-            color: var(--emerald-300); -webkit-tap-highlight-color: transparent;
-        }
-        .nav-btn:hover { background: rgba(16,185,129,0.18); transform: translateY(-1px); }
-        .nav-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-        .nav-btn.nav-btn-primary { background: linear-gradient(135deg, #10b981 0%, #059669 55%, #047857 100%); border-color: rgba(52,211,153,0.65); color: #fff; box-shadow: 0 6px 16px -8px rgba(16,185,129,0.9); }
-        .email-contact { display: flex; align-items: center; gap: 8px; background: rgba(245,197,66,0.06); border: 1px solid rgba(245,197,66,0.28); border-radius: 14px; padding: 8px 8px 8px 14px; margin-top: 10px; flex-wrap: wrap; }
-        .email-contact .email-addr { font-weight: 800; color: var(--gold-300); font-size: 0.8rem; word-break: break-all; }
-        .email-contact .email-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 999px; font-size: 0.68rem; font-weight: 800; font-family: inherit; cursor: pointer; transition: background 0.2s; border: none; background: rgba(16,185,129,0.12); color: var(--emerald-300); text-decoration: none; -webkit-tap-highlight-color: transparent; }
-        .email-contact .email-btn:hover { background: rgba(16,185,129,0.22); }
-        .email-contact .email-btn svg { width: 13px; height: 13px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-        .email-contact .email-btn.copy-success { color: var(--gold-300); background: rgba(245,197,66,0.14); }
-        .toast {
-            position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
-            padding: 12px 22px; border-radius: 999px; font-weight: 700; font-size: 0.82rem;
-            z-index: 9999; animation: toastIn 0.3s ease; max-width: 90%; text-align: center;
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-        }
-        .toast.success { background: rgba(16,185,129,0.16); color: var(--emerald-200); border: 1px solid rgba(52,211,153,0.4); }
-        .toast.error { background: rgba(239,68,68,0.14); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35); }
-        @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px) scale(0.95); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } }
-        @media (max-width: 600px) {
-            .container { padding: 10px; }
-            .assistant-avatar { width: 38px; height: 38px; padding: 2.5px; }
-            .assistant-name { font-size: 0.85rem; }
-            .assistant-status { font-size: 0.56rem; letter-spacing: 0.1em; }
-            .back-btn { font-size: 0.74rem; padding: 6px 11px 6px 9px; }
-            .back-btn svg { width: 14px; height: 14px; }
-            .message { max-width: 90%; font-size: 0.85rem; padding: 10px 12px; }
-            .msg-avatar { width: 24px; height: 24px; }
-            .input-area { padding: 4px 4px 4px 14px; }
-            .input-area input { font-size: 0.86rem; padding: 11px 0; }
-            .send-btn { width: 42px; height: 42px; }
-            .send-btn svg { width: 17px; height: 17px; }
-            .nav-btn { font-size: 0.66rem; padding: 6px 11px; }
-            .empty-state .empty-avatar { width: 66px; height: 66px; padding: 4px; }
-        }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<meta name="referrer" content="no-referrer" />
+<title>Sajvera Campaign | Sajvera Capital</title>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<style>
+:root{--emerald-200:#a7f3d0;--emerald-300:#6ee7b7;--emerald-400:#34d399;--emerald-500:#10b981;--gold-300:#ffe9a3;--gold-500:#f5c542;--brand-violet:#7c6df0;--brand-cyan:#5dd9f2;--text:#fff;--faint:rgba(255,255,255,.42)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;height:100%;color:var(--text);background-color:#030604;overflow:hidden;-webkit-font-smoothing:antialiased}
+body{background-image:radial-gradient(700px 420px at 50% -10%,rgba(14,58,40,.7) 0%,rgba(3,6,4,0) 68%),radial-gradient(560px 400px at 100% 110%,rgba(16,185,129,.08) 0%,rgba(3,6,4,0) 62%),linear-gradient(180deg,#05130d 0%,#030a07 55%,#020504 100%);background-repeat:no-repeat;background-size:100% 100%}
+.ai-avatar{flex-shrink:0;border-radius:50%;background:radial-gradient(circle at 50% 40%,#0a2a1d 0%,#030a07 100%);border:2px solid rgba(16,185,129,.55);padding:3px;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 16px -3px rgba(16,185,129,.75),0 0 30px -10px rgba(16,185,129,.55),inset 0 0 8px rgba(16,185,129,.20)}
+.ai-avatar .avatar-symbol{width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--brand-violet) 0%,var(--brand-cyan) 100%);display:flex;align-items:center;justify-content:center}
+.ai-avatar .avatar-symbol svg{width:58%;height:58%;stroke:#fff;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.container{max-width:640px;margin:0 auto;padding:12px;height:100vh;height:100dvh;display:flex;flex-direction:column}
+.header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-shrink:0;margin-bottom:10px}
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:999px;padding:8px 14px 8px 11px;font-size:.8rem;font-weight:600;color:#c9f7e4;cursor:pointer;font-family:inherit}
+.back-btn:hover{background:rgba(16,185,129,.16)}
+.back-btn svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.4;fill:none}
+.assistant-brand{display:flex;align-items:center;gap:10px}
+.assistant-avatar{width:44px;height:44px}
+.assistant-name{font-size:.92rem;font-weight:800;color:#fff;white-space:nowrap}
+.assistant-status{display:inline-flex;align-items:center;gap:6px;margin-top:2px;font-size:.62rem;font-weight:800;letter-spacing:.12em;color:var(--emerald-300);text-transform:uppercase;white-space:nowrap}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.9);animation:statusPulse 2s infinite}
+@keyframes statusPulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.chat-box{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding:6px 2px 12px;display:flex;flex-direction:column;gap:10px;min-height:0;-webkit-overflow-scrolling:touch;scroll-behavior:auto}
+.chat-box::-webkit-scrollbar{width:4px}
+.chat-box::-webkit-scrollbar-thumb{background:rgba(16,185,129,.25);border-radius:10px}
+.message{max-width:86%;padding:11px 14px;border-radius:16px;word-wrap:break-word;line-height:1.6;font-size:.9rem;animation:msgFadeIn .28s ease;display:flex;align-items:flex-start;gap:9px;position:relative}
+@keyframes msgFadeIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.user-message{align-self:flex-end;background:linear-gradient(135deg,#10b981 0%,#047857 100%);color:#fff;border-bottom-right-radius:5px;box-shadow:0 8px 24px -12px rgba(16,185,129,.9),inset 0 1px 0 rgba(255,255,255,.18)}
+.user-message .msg-icon{flex-shrink:0;width:26px;height:26px;stroke:#fff;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round;margin-top:1px;opacity:.9}
+.ai-message{align-self:flex-start;background:linear-gradient(155deg,#0a2619 0%,#051510 100%);color:#fff;border:1px solid rgba(16,185,129,.30);border-bottom-left-radius:5px;box-shadow:0 10px 28px -20px rgba(0,0,0,.95),0 0 22px -14px rgba(16,185,129,.6),inset 0 1px 0 rgba(255,255,255,.04)}
+.msg-avatar{width:26px;height:26px;padding:2px;border-width:1.5px;margin-top:2px;box-shadow:0 0 10px -2px rgba(16,185,129,.75),inset 0 0 5px rgba(16,185,129,.20)}
+.ai-message .msg-content{flex:1;min-width:0}
+.ai-message strong{color:var(--gold-300);font-weight:800}
+.ai-message em{color:var(--emerald-300);font-style:normal;font-weight:700}
+.ai-message a{color:var(--emerald-300);text-decoration:underline}
+.ai-message ul,.ai-message ol{padding-left:1.4rem;margin:6px 0}
+.ai-message li{margin-bottom:3px}
+.ai-message hr{border:0;border-top:1px solid rgba(16,185,129,.15);margin:8px 0}
+.ai-message .section-title{display:block;margin-top:8px;font-weight:800;color:var(--gold-300)}
+.ai-message code{background:rgba(16,185,129,.12);color:var(--emerald-300);padding:2px 8px;border-radius:6px;font-family:ui-monospace,Menlo,monospace;font-size:.85em;font-weight:700}
+.typing-indicator{align-self:flex-start;background:linear-gradient(155deg,#0a2619 0%,#051510 100%);border:1px solid rgba(16,185,129,.30);border-radius:16px;border-bottom-left-radius:5px;padding:11px 14px;color:rgba(255,255,255,.7);font-size:.82rem;display:flex;align-items:center;gap:9px}
+.typing-indicator .dots{display:inline-flex;gap:4px;margin-left:2px}
+.typing-indicator .dots span{width:6px;height:6px;border-radius:50%;background:var(--emerald-400);opacity:.35;animation:dotPulse 1.2s ease-in-out infinite}
+.typing-indicator .dots span:nth-child(2){animation-delay:.18s}
+.typing-indicator .dots span:nth-child(3){animation-delay:.36s}
+@keyframes dotPulse{0%,100%{opacity:.28;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+.empty-state{text-align:center;padding:30px 16px;color:rgba(255,255,255,.4);align-self:center;margin:auto 0}
+.empty-state .empty-avatar{width:76px;height:76px;margin:0 auto 14px;border-width:3px;padding:5px}
+.empty-state .title{font-size:1rem;font-weight:800;color:#fff}
+.empty-state .sub{font-size:.8rem;color:var(--faint);margin-top:4px}
+.input-area{display:flex;gap:8px;background:linear-gradient(150deg,rgba(10,34,24,.9) 0%,rgba(4,12,9,.95) 100%);border-radius:60px;padding:5px 5px 5px 16px;align-items:center;border:1.5px solid rgba(16,185,129,.22);flex-shrink:0}
+.input-area:focus-within{border-color:rgba(16,185,129,.7);box-shadow:0 0 0 4px rgba(16,185,129,.10)}
+.input-area input{flex:1;background:transparent;border:none;padding:12px 0;color:#fff;font-size:.9rem;font-family:inherit;outline:none;min-width:0}
+.input-area input::placeholder{color:rgba(255,255,255,.32)}
+.send-btn{background:linear-gradient(135deg,#10b981 0%,#059669 55%,#047857 100%);border:none;width:44px;height:44px;border-radius:50%;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 8px 20px -10px rgba(16,185,129,.95)}
+.send-btn:disabled{opacity:.55;cursor:not-allowed}
+.send-btn svg{width:18px;height:18px;fill:currentColor}
+.chat-choice-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:999px;font-family:inherit;font-size:.78rem;font-weight:800;cursor:pointer;border:1px solid rgba(52,211,153,.55);background:rgba(16,185,129,.12);color:var(--emerald-300);margin:4px 6px 0 0}
+.chat-choice-btn:hover{background:rgba(16,185,129,.22)}
+.chat-choice-btn.primary{background:linear-gradient(135deg,#10b981 0%,#059669 55%,#047857 100%);color:#fff}
+.chat-choice-btn.danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:#fca5a5}
+.chat-choice-btn:disabled{opacity:.5;cursor:not-allowed}
+.email-contact{display:flex;align-items:center;gap:8px;background:rgba(245,197,66,.06);border:1px solid rgba(245,197,66,.28);border-radius:14px;padding:8px 8px 8px 14px;margin-top:10px;flex-wrap:wrap}
+.email-contact .email-addr{font-weight:800;color:var(--gold-300);font-size:.8rem;word-break:break-all}
+.email-contact .email-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;font-size:.68rem;font-weight:800;font-family:inherit;cursor:pointer;border:none;background:rgba(16,185,129,.12);color:var(--emerald-300);text-decoration:none}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);padding:12px 22px;border-radius:999px;font-weight:700;font-size:.82rem;z-index:9999;max-width:90%;text-align:center}
+.toast.success{background:rgba(16,185,129,.16);color:#a7f3d0;border:1px solid rgba(52,211,153,.4)}
+.toast.error{background:rgba(239,68,68,.14);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
+@media(max-width:600px){.container{padding:10px}.assistant-avatar{width:38px;height:38px;padding:2.5px}.assistant-name{font-size:.85rem}.message{max-width:90%;font-size:.85rem;padding:10px 12px}.send-btn{width:42px;height:42px}}
+</style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <button class="back-btn" id="backBtn" type="button">
-                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                Back
-            </button>
-            <div class="assistant-brand">
-                <span class="ai-avatar assistant-avatar">
-                    <span class="avatar-symbol">
-                        <svg viewBox="0 0 24 24"><polyline points="6 6 18 6 6 18 18 18"/></svg>
-                    </span>
-                </span>
-                <div class="assistant-meta">
-                    <div class="assistant-name">Sajvera Campaign</div>
-                    <div class="assistant-status"><span class="status-dot"></span> Online • 24/7</div>
-                </div>
-            </div>
-        </header>
-        <div class="chat-box" id="chatBox">
-            <div class="empty-state" id="emptyState">
-                <span class="ai-avatar empty-avatar">
-                    <span class="avatar-symbol">
-                        <svg viewBox="0 0 24 24"><polyline points="6 6 18 6 6 18 18 18"/></svg>
-                    </span>
-                </span>
-                <div class="title">Sajvera Campaign</div>
-                <div class="sub">Online • 24/7 — deposit or withdraw right here in chat</div>
-            </div>
-        </div>
-        <div class="input-area">
-            <input type="text" id="userInput" placeholder="Ask or say: deposit / withdraw…" autocomplete="off" />
-            <button class="send-btn" id="sendBtn" type="button" aria-label="Send">
-                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-            </button>
-        </div>
+<div class="container">
+  <header class="header">
+    <button class="back-btn" id="backBtn" type="button">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back
+    </button>
+    <div class="assistant-brand">
+      <span class="ai-avatar assistant-avatar"><span class="avatar-symbol"><svg viewBox="0 0 24 24"><polyline points="6 6 18 6 6 18 18 18"/></svg></span></span>
+      <div class="assistant-meta">
+        <div class="assistant-name">Sajvera Campaign</div>
+        <div class="assistant-status"><span class="status-dot"></span> Online • 24/7</div>
+      </div>
     </div>
+  </header>
+  <div class="chat-box" id="chatBox">
+    <div class="empty-state" id="emptyState">
+      <span class="ai-avatar empty-avatar"><span class="avatar-symbol"><svg viewBox="0 0 24 24"><polyline points="6 6 18 6 6 18 18 18"/></svg></span></span>
+      <div class="title">Sajvera Campaign</div>
+      <div class="sub">Online • 24/7 — I can help you invest, deposit, withdraw, and more</div>
+    </div>
+  </div>
+  <div class="input-area">
+    <input type="text" id="userInput" placeholder="Ask: invest K100 / deposit / withdraw / referral…" autocomplete="off" />
+    <button class="send-btn" id="sendBtn" type="button"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
+  </div>
+</div>
 
-    <script>
-        // ================================================================
-        // FIREBASE
-        // ================================================================
-        var firebaseConfig = {
-            apiKey: "AIzaSyALbWDHrhratYCCq3WpAu7jZFw6S8kTg2U",
-            authDomain: "pureore-capital-zambia.firebaseapp.com",
-            projectId: "pureore-capital-zambia",
-            storageBucket: "pureore-capital-zambia.appspot.com",
-            messagingSenderId: "78967797858",
-            appId: "1:78967797858:web:379b9692951429c345793b",
-            measurementId: "G-FQKC29NYE9"
-        };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        var auth = firebase.auth();
-        var db = firebase.firestore();
-        db.settings({ persistence: true });
-        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(console.warn);
+<script>
+// ================================================================
+// FIREBASE
+// ================================================================
+var firebaseConfig = {
+  apiKey: "AIzaSyALbWDHrhratYCCq3WpAu7jZFw6S8kTg2U",
+  authDomain: "pureore-capital-zambia.firebaseapp.com",
+  projectId: "pureore-capital-zambia",
+  storageBucket: "pureore-capital-zambia.appspot.com",
+  messagingSenderId: "78967797858",
+  appId: "1:78967797858:web:379b9692951429c345793b"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+var auth = firebase.auth();
+var db = firebase.firestore();
+db.settings({ persistence: true });
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(console.warn);
 
-        var GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY_HERE';
-        var GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + GEMINI_API_KEY;
-        var AI_NAME = 'Sajvera Campaign';
-        var SUPPORT_EMAIL = 'Pureorecapital@gmail.com';
+var SUPPORT_EMAIL = 'Pureorecapital@gmail.com';
+var EMAIL_TOKEN = '\u0001ET\u0001';
+var NAV_OPEN = '\u0001NO\u0001';
+var NAV_CLOSE = '\u0001NC\u0001';
 
-        // Safe markers that survive HTML escaping
-        var NAV_OPEN = '\u0001NAVOPEN\u0001';
-        var NAV_CLOSE = '\u0001NAVCLOSE\u0001';
-        var EMAIL_TOKEN = '\u0001EMAILTOKEN\u0001';
+var chatBox = document.getElementById('chatBox');
+var userInput = document.getElementById('userInput');
+var sendBtn = document.getElementById('sendBtn');
+var backBtn = document.getElementById('backBtn');
+var currentUserId = null;
+var messagesRef = null;
+var unsubscribe = null;
+var isFirstLoad = true;
+var blockUnsub = null;
+var userBalance = 0;
+var depositRules = { requireAmountMatch:true, requireAgentName:true, requireNetworkKeyword:true, requireTxKeyword:true, requireFutureDate:true };
+var hardcodedAgents = {
+  mtn:[{number:'0967340042',name:'Jeremiah ilunga'},{number:'0963070992',name:'John Kabwe'}],
+  airtel:[{number:'0571518417',name:'John Kabwe'}]
+};
 
-        var chatBox = document.getElementById('chatBox');
-        var userInput = document.getElementById('userInput');
-        var sendBtn = document.getElementById('sendBtn');
-        var backBtn = document.getElementById('backBtn');
-        var currentUserId = null;
-        var messagesRef = null;
-        var unsubscribe = null;
-        var isFirstLoad = true;
-        var blockUnsub = null;
+var flow = { state:'idle', data:{} };
 
-        // ================================================================
-        // AI TRANSACTION FLOW STATE
-        // ================================================================
-        var assistantFlow = { state: 'idle', data: {} };
-        var depositRules = {
-            requireAmountMatch: true, requireAgentName: true,
-            requireNetworkKeyword: true, requireTxKeyword: true, requireFutureDate: true
-        };
-        var hardcodedAgents = {
-            mtn: [
-                { number: '0967340042', name: 'Jeremiah ilunga' },
-                { number: '0963070992', name: 'John Kabwe' }
-            ],
-            airtel: [
-                { number: '0571518417', name: 'John Kabwe' }
-            ]
-        };
+// ================================================================
+// HELPERS
+// ================================================================
+function showToast(msg, isError){
+  var e=document.querySelector('.toast'); if(e) e.remove();
+  var t=document.createElement('div');
+  t.className='toast '+(isError?'error':'success');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){ if(t.parentNode) t.remove(); }, 3500);
+}
+var scrollRAF=null;
+function scrollToBottom(){ if(scrollRAF) cancelAnimationFrame(scrollRAF); scrollRAF=requestAnimationFrame(function(){ chatBox.scrollTop=chatBox.scrollHeight; scrollRAF=null; }); }
+function scrollToBottomImmediate(){ chatBox.scrollTop=chatBox.scrollHeight; }
+function escapeHtml(t){ var d=document.createElement('div'); d.textContent=String(t); return d.innerHTML; }
+function withinWithdrawWindow(){ var h=new Date().getHours(); return h>=9 && h<17; }
 
-        function loadDepositRulesForAssistant() {
-            return db.collection('systemSettings').doc('depositRules').get().then(function(doc) {
-                if (doc.exists) {
-                    var d = doc.data();
-                    depositRules.requireAmountMatch = d.requireAmountMatch !== false;
-                    depositRules.requireAgentName = d.requireAgentName !== false;
-                    depositRules.requireNetworkKeyword = d.requireNetworkKeyword !== false;
-                    depositRules.requireTxKeyword = d.requireTxKeyword !== false;
-                    depositRules.requireFutureDate = d.requireFutureDate !== false;
-                }
-            }).catch(function(err) { console.warn('Deposit rules load failed:', err); });
+function btnToken(action,value,label){ return '[[BTN:'+action+':'+encodeURIComponent(value)+':'+encodeURIComponent(label)+']]'; }
+function renderChoiceBtn(action,value,label,cls){
+  var c='chat-choice-btn'+(cls?' '+cls:'');
+  return '<button type="button" class="'+c+'" data-btn-action="'+escapeHtml(action)+'" data-btn-value="'+escapeHtml(value)+'">'+escapeHtml(label)+'</button>';
+}
+
+// ================================================================
+// NATURAL LANGUAGE HELPERS — INVEST & REFERRAL INTENT
+// ================================================================
+// Extract a ZMW amount from free-form English. Handles:
+//   "100", "K100", "K 100", "100 kwacha", "100 zmw", "K1,000.50", "1,000"
+function extractAmount(text){
+  var str = String(text||'').toLowerCase().trim();
+  // Prefer explicit currency marker
+  var m = str.match(/(?:k|zmw|kwacha|kw)\s*([0-9]+(?:[.,][0-9]+)?)/i);
+  if (m) return parseFloat(m[1].replace(/,/g,''));
+  // Otherwise, any standalone number 1-6 digits
+  var nums = str.match(/\b([0-9]{1,6}(?:[.,][0-9]+)?)\b/g);
+  if (nums && nums.length){
+    for (var i=0;i<nums.length;i++){
+      var v = parseFloat(nums[i].replace(/,/g,''));
+      if (!isNaN(v) && v >= 1) return v;
+    }
+  }
+  return null;
+}
+
+// Detect invest intent in normal English — no exact phrase needed.
+function isInvestIntent(text){
+  var t = String(text||'').toLowerCase();
+  var patterns = [
+    /\binvest\b/, /\binvesting\b/, /\binvestment\b/, /\binvestments\b/,
+    /\bmarketplace\b/, /\bmarket\s*place\b/,
+    /\bput\s+(?:my\s+)?(?:money|k|zmw|kwacha|cash|amount)\b/,
+    /\bbuy\s+(?:a\s+)?plan\b/,
+    /\bwhat\s+can\s+i\s+(?:get|buy|invest|put|afford)\b/,
+    /\bwhich\s+(?:plan|investment)\b/,
+    /\bavailable\s+(?:plan|plans|investment|investments)\b/,
+    /\bshow\s+me\s+(?:a\s+|the\s+|something\s+)?(?:plan|plans|investment|investments)\b/,
+    /\bi\s+have\s+(?:k|zmw|kwacha|\$)?\s*\d+/,
+    /\bi\s+want\s+to\s+(?:invest|put\s+my\s+money|put\s+money|start\s+with)\b/,
+    /\bwhat\s+(?:plan|investment)\s+can\s+i\b/,
+    /\bcan\s+i\s+afford\b/,
+    /\bstart\s+with\s+(?:k|zmw|kwacha|\$)?\s*\d+/,
+    /\bwhere\s+can\s+i\s+invest\b/
+  ];
+  for (var i=0;i<patterns.length;i++) if (patterns[i].test(t)) return true;
+  return false;
+}
+
+// Detect referral intent
+function isReferralIntent(text){
+  var t = String(text||'').toLowerCase();
+  var patterns = [
+    /\breferral\b/, /\breferrals\b/, /\brefer\b/, /\breferring\b/,
+    /\breferral\s+code\b/, /\brefer\s+code\b/,
+    /\bmy\s+code\b/, /\bmy\s+referral\b/,
+    /\binvite\s+code\b/, /\binvite\s+link\b/, /\binvitation\s+code\b/,
+    /\bshare\s+code\b/, /\bshare\s+link\b/, /\bshare\s+my\s+link\b/,
+    /\bmy\s+link\b/, /\bmy\s+referral\s+link\b/,
+    /\brefer\s+friends\b/, /\binvite\s+friends\b/
+  ];
+  for (var i=0;i<patterns.length;i++) if (patterns[i].test(t)) return true;
+  return false;
+}
+
+// ================================================================
+// MARKETPLACE PLAN SEARCH — real Firestore data only
+// ================================================================
+async function findPlansForAmount(amount){
+  try{
+    var snap = await db.collection('marketplacePlans')
+      .where('showOnMarketplace','==',true).get();
+    var matches = [];
+    snap.forEach(function(doc){
+      var d = doc.data();
+      d.id = doc.id;
+      var price = parseFloat(d.investmentPrice || d.minAmount || 0);
+      if (Math.abs(price - amount) < 0.01){
+        matches.push(d);
+      }
+    });
+    return matches;
+  }catch(err){
+    console.warn('Plan search error:', err);
+    return null; // null = error, [] = no match
+  }
+}
+
+function buildPlanBlock(plan){
+  var name = plan.planName || plan.name || 'Plan';
+  var price = parseFloat(plan.investmentPrice || plan.minAmount || 0);
+  var daily = parseFloat(plan.dailyReturn || 0);
+  var days = parseInt(plan.earningDays || plan.days || 0, 10);
+  var totalProfit = parseFloat(plan.totalProfit || 0);
+  var type = plan.planType === 'buy' ? 'buy' : 'invest';
+  var s = '';
+  s += '🌱 *' + name + '*\n';
+  s += '💰 Investment: *K' + price.toFixed(2) + '*\n';
+  if (type === 'invest'){
+    s += '📈 Daily income: *K' + daily.toFixed(2) + '*\n';
+    s += '📅 Duration: *' + days + ' days*\n';
+    s += '💵 Total income: *K' + (daily*days).toFixed(2) + '*\n';
+  } else {
+    s += '📈 Profit: *K' + totalProfit.toFixed(2) + '*\n';
+    s += '📅 Duration: *' + days + ' days*\n';
+    s += '💵 Total at maturity: *K' + (price + totalProfit).toFixed(2) + '*\n';
+  }
+  return s;
+}
+
+async function performInvestSearch(amount){
+  var matches = await findPlansForAmount(amount);
+  if (matches === null){
+    flow.state='idle'; flow.data={};
+    return "I'm having trouble checking the available Marketplace plans right now. 😟\n\nPlease try again in a moment, or open the *Marketplace* page from your dashboard.";
+  }
+  if (matches.length === 0){
+    flow.state='idle'; flow.data={};
+    return "I understand 😊 You want to invest *K" + amount.toFixed(2) + "*.\n\n" +
+      "I checked the currently available Marketplace plans, but I couldn't find a plan available for K" + amount.toFixed(2) + " at the moment. 💚\n\n" +
+      "Please check the available plans or contact Sajvera Capital Support for assistance:\n\n[EMAIL_CONTACT]";
+  }
+
+  var msg;
+  if (matches.length === 1){
+    msg = "Absolutely 😊 I can help you find an investment for *K" + amount.toFixed(2) + "*.\n\n" +
+      "I found an available plan:\n\n" + buildPlanBlock(matches[0]) +
+      "\nWould you like to continue?\n\n" +
+      "Tap *Marketplace* below to see the full details and confirm your investment.";
+  } else {
+    msg = "Sure 😊 I found these available options for *K" + amount.toFixed(2) + "*:\n\n";
+    for (var i=0;i<matches.length;i++){
+      msg += buildPlanBlock(matches[i]);
+      msg += '\n';
+    }
+    msg += "Which one would you like to choose?\n\n" +
+      "Tap *Marketplace* below to see all details and confirm.";
+  }
+
+  flow.state='idle'; flow.data={};
+  return msg;
+}
+
+// ================================================================
+// REFERRAL CODE — real user data
+// ================================================================
+async function showReferralCode(){
+  if (!currentUserId){
+    return "Please log in first so I can show you your referral code. 😊";
+  }
+  try{
+    var doc = await db.collection('users').doc(currentUserId).get();
+    if (!doc.exists){
+      return "I couldn't find your profile. Please contact Support:\n\n[EMAIL_CONTACT]";
+    }
+    var data = doc.data();
+    var code = data.referralCode;
+    if (!code){
+      return "Your referral code isn't set up yet. Please contact Support to have it generated:\n\n[EMAIL_CONTACT]";
+    }
+    var url = window.location.href;
+    var base = url.substring(0, url.lastIndexOf('/') + 1);
+    var link = base + 'register.html?ref=' + code;
+
+    return "Sure 😊 Here's your referral code:\n\n" +
+      "🎁 *Referral Code:* `" + code + "`\n\n" +
+      "🔗 *Referral Link:*\n" + link + "\n\n" +
+      "Share this link with friends. When someone registers with your code, makes their first completed deposit, and buys an investment plan, you earn a *5% bonus* on that deposit. 👥💰";
+  }catch(err){
+    console.warn('Referral fetch error:', err);
+    return "I couldn't load your referral code right now. Please try again or contact Support:\n\n[EMAIL_CONTACT]";
+  }
+}
+
+// ================================================================
+// LOAD RULES + AGENTS
+// ================================================================
+function loadDepositRulesForAssistant(){
+  return db.collection('systemSettings').doc('depositRules').get().then(function(doc){
+    if(doc.exists){ var d=doc.data();
+      depositRules.requireAmountMatch=d.requireAmountMatch!==false;
+      depositRules.requireAgentName=d.requireAgentName!==false;
+      depositRules.requireNetworkKeyword=d.requireNetworkKeyword!==false;
+      depositRules.requireTxKeyword=d.requireTxKeyword!==false;
+      depositRules.requireFutureDate=d.requireFutureDate!==false;
+    }
+  }).catch(function(){});
+}
+function loadAgentsForAssistant(network){
+  return db.collection('systemSettings').doc('depositAgents').get().then(function(doc){
+    if(doc.exists){ var data=doc.data();
+      var list=(data.agents && data.agents[network]) ? data.agents[network] : [];
+      if(list.length>0) return list[Math.floor(Math.random()*list.length)];
+    }
+    var fb=hardcodedAgents[network]||[];
+    return fb.length>0 ? fb[Math.floor(Math.random()*fb.length)] : null;
+  }).catch(function(){
+    var fb=hardcodedAgents[network]||[];
+    return fb.length>0 ? fb[Math.floor(Math.random()*fb.length)] : null;
+  });
+}
+function loadBalance(){
+  if(!currentUserId) return Promise.resolve(0);
+  return db.collection('users').doc(currentUserId).get().then(function(doc){
+    if(doc.exists){ var d=doc.data();
+      userBalance = d.walletBalance !== undefined ? d.walletBalance : (d.balance||0);
+    }
+    return userBalance;
+  }).catch(function(){ return userBalance; });
+}
+
+// ================================================================
+// SMS VALIDATION
+// ================================================================
+function validateDepositSmsLocal(sms, d){
+  var lower = String(sms).toLowerCase(); var errors=[];
+  var agentClean = String(d.agentNumber||'').replace(/\D/g,'');
+  if(agentClean && lower.indexOf(agentClean)===-1) errors.push('Agent number not found in SMS.');
+  if(depositRules.requireAgentName && d.accountName){
+    var parts = String(d.accountName).toLowerCase().split(' ');
+    if(!parts.some(function(p){return p.length>2 && lower.indexOf(p)!==-1;})) errors.push('Account name not found in SMS.');
+  }
+  if(depositRules.requireAmountMatch){
+    var m = lower.match(/(?:k|zmw|kwacha|\$)\s*(\d+\.?\d*)/i);
+    var smsAmt = m ? parseFloat(m[1]) : 0;
+    if(Math.abs(smsAmt - d.amount) > 0.01) errors.push('SMS amount ('+smsAmt.toFixed(2)+') does not match deposit ('+d.amount.toFixed(2)+').');
+  }
+  if(depositRules.requireNetworkKeyword){
+    if(!['mtn','airtel','zamtel'].some(function(n){return lower.indexOf(n)!==-1;})) errors.push('Network keyword missing from SMS.');
+  }
+  if(depositRules.requireTxKeyword){
+    if(!['send','sent','received','paid','transfer','successful','payment'].some(function(k){return lower.indexOf(k)!==-1;})) errors.push('Transaction keyword missing from SMS.');
+  }
+  if(depositRules.requireFutureDate){
+    var dm = lower.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b/);
+    if(dm){ var parsed = new Date(dm[1]); if(!isNaN(parsed) && parsed > new Date()) errors.push('SMS contains a future date.'); }
+  }
+  return { valid: errors.length===0, errors: errors };
+}
+
+// ================================================================
+// FLOW ENGINE
+// ================================================================
+async function handleAssistantFlow(text){
+  var lower = String(text||'').toLowerCase().trim();
+  var st = flow.state; var d = flow.data;
+
+  // Global cancel
+  if(st!=='idle' && /^(cancel|stop|exit|quit)$/i.test(lower)){
+    flow.state='idle'; flow.data={};
+    return "No problem — cancelled. 😊 Anything else I can help with?";
+  }
+
+  // ============ IDLE — detect intents (order matters) ============
+  if(st==='idle'){
+    // ---- REFERRAL (checked first — very specific) ----
+    if (isReferralIntent(lower)){
+      return await showReferralCode();
+    }
+
+    // ---- INVEST / MARKETPLACE ----
+    if (isInvestIntent(lower)){
+      var amt = extractAmount(text);
+      if (amt && amt >= 1){
+        flow.state = 'invest_search';
+        var reply = await performInvestSearch(amt);
+        return reply;
+      }
+      flow.state = 'invest_amount'; flow.data = {};
+      return "Sure 😊 What amount would you like to invest?\n\nMinimum: *1 ZMW*.\n\nExample: *100*";
+    }
+
+    // ---- DEPOSIT ----
+    var m = lower.match(/(?:deposit|top up|add money|fund)\s*(?:k|zmw|kwacha|\$)?\s*(\d+(?:\.\d+)?)/i);
+    var mNoAmt = /(i want to deposit|make a deposit|start deposit|^deposit$|^deposit\s)/i.test(lower);
+    if(m || mNoAmt){
+      flow.state='deposit_amount'; flow.data={};
+      if(m){
+        var a = parseFloat(m[1]);
+        if(!isNaN(a) && a>=1){
+          flow.data.amount=a; flow.state='deposit_network';
+          return "Sure 😊 I can help you with your *"+a.toFixed(2)+" ZMW* deposit.\n\nWhich network would you like to use?\n\n"+
+            btnToken('net','mtn','MTN')+' '+btnToken('net','airtel','Airtel')+' '+btnToken('net','zamtel','Zamtel');
         }
+      }
+      return "Sure! Let's deposit some money 💰\n\nHow much would you like to deposit?\n\nMinimum: *1 ZMW* — no maximum.\n\nType the amount, e.g. *100*";
+    }
 
-        function loadAgentsForAssistant(network) {
-            return db.collection('systemSettings').doc('depositAgents').get().then(function(doc) {
-                if (doc.exists) {
-                    var data = doc.data();
-                    var agents = (data.agents && data.agents[network]) ? data.agents[network] : [];
-                    if (agents.length > 0) return agents[Math.floor(Math.random() * agents.length)];
-                }
-                var fb = hardcodedAgents[network] || [];
-                return fb.length > 0 ? fb[Math.floor(Math.random() * fb.length)] : null;
-            }).catch(function(err) {
-                console.warn('Agent load failed:', err);
-                var fb = hardcodedAgents[network] || [];
-                return fb.length > 0 ? fb[Math.floor(Math.random() * fb.length)] : null;
-            });
+    // ---- WITHDRAW ----
+    var wm = lower.match(/(?:withdraw|withdrawal|cash out|take out)\s*(?:k|zmw|kwacha|\$)?\s*(\d+(?:\.\d+)?)/i);
+    var wNoAmt = /(i want to withdraw|make a withdrawal|start withdrawal|^withdraw$|^withdraw\s|withdrawal money|cash out)/i.test(lower);
+    if(wm || wNoAmt){
+      if(!withinWithdrawWindow()){
+        return "⏰ Withdrawals are only allowed between *09:00* and *17:00* (9 AM – 5 PM).\n\nPlease come back during those hours. 😊";
+      }
+      await loadBalance();
+      if(wm){
+        var wamt = parseFloat(wm[1]);
+        if(!isNaN(wamt) && wamt>=1){
+          if(wamt > userBalance){
+            return "❌ Your current wallet balance is *"+userBalance.toFixed(2)+" ZMW* — you don't have enough to withdraw *"+wamt.toFixed(2)+" ZMW*.\n\nWould you like to enter a smaller amount?";
+          }
+          flow.data.amount=wamt; flow.data.fee=wamt*0.10; flow.data.net=wamt-flow.data.fee;
+          flow.state='withdraw_network';
+          return "Sure 😊 I'll help you with that.\n\n✅ Available balance: *"+userBalance.toFixed(2)+" ZMW*\n💵 Amount: *"+wamt.toFixed(2)+" ZMW*\n📉 Fee (10%): "+flow.data.fee.toFixed(2)+" ZMW\n💰 You'll receive: *"+flow.data.net.toFixed(2)+" ZMW*\n\nWhich network should we send the money to?\n\n"+
+            btnToken('net','mtn','MTN')+' '+btnToken('net','airtel','Airtel')+' '+btnToken('net','zamtel','Zamtel')+' '+btnToken('net','bank','Bank');
         }
+      }
+      flow.state='withdraw_amount'; flow.data={};
+      return "Sure 😊 I'll help you with that.\n\nYour current wallet balance is *"+userBalance.toFixed(2)+" ZMW*.\n\nA *10% processing fee* applies. How much would you like to withdraw?\n\nType the amount, e.g. *200*";
+    }
+  }
 
-        function isWithdrawTimeAllowed() {
-            var now = new Date();
-            var h = now.getHours();
-            return h >= 9 && h < 17;
-        }
+  // ============ INVEST: AMOUNT ============
+  if (st==='invest_amount'){
+    var ia = extractAmount(text);
+    if (!ia || ia < 1){
+      return "Please enter a valid amount of at least *1 ZMW*. Example: *100*";
+    }
+    return await performInvestSearch(ia);
+  }
 
-        function validateDepositSms(sms, data) {
-            var lowerSms = sms.toLowerCase();
-            var errors = [];
-            var agentClean = String(data.agentNumber || '').replace(/\D/g, '');
-            if (agentClean && lowerSms.indexOf(agentClean) === -1) {
-                errors.push('Agent number (' + data.agentNumber + ') not found in SMS.');
-            }
-            if (depositRules.requireAgentName && data.accountName) {
-                var parts = String(data.accountName).toLowerCase().split(' ');
-                var found = parts.some(function(p) { return p.length > 2 && lowerSms.indexOf(p) !== -1; });
-                if (!found) errors.push('Account name "' + data.accountName + '" not found in SMS.');
-            }
-            if (depositRules.requireAmountMatch) {
-                var m = lowerSms.match(/(?:k|zmw|r|zar|usd|eur|gbp|ngn|ghs|tzs|zwl|cdf)\s*(\d+\.?\d*)/i);
-                var smsAmt = m ? parseFloat(m[1]) : 0;
-                if (Math.abs(smsAmt - data.amount) > 0.01) {
-                    errors.push('SMS amount (' + smsAmt.toFixed(2) + ') does not match deposit (' + data.amount.toFixed(2) + ').');
-                }
-            }
-            if (depositRules.requireNetworkKeyword) {
-                if (!['mtn','airtel','zamtel'].some(function(n){return lowerSms.indexOf(n)!==-1;})) {
-                    errors.push('No network keyword (MTN/Airtel/Zamtel) found in SMS.');
-                }
-            }
-            if (depositRules.requireTxKeyword) {
-                if (!['send','sent','received','paid','transfer','successful','payment'].some(function(k){return lowerSms.indexOf(k)!==-1;})) {
-                    errors.push('No transaction keyword found in SMS.');
-                }
-            }
-            if (depositRules.requireFutureDate) {
-                var dm = lowerSms.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b/);
-                if (dm) {
-                    var parsed = new Date(dm[1]);
-                    if (!isNaN(parsed) && parsed > new Date()) {
-                        errors.push('SMS contains a future transaction date (' + dm[1] + ').');
-                    }
-                }
-            }
-            return { valid: errors.length === 0, errors: errors };
-        }
+  // ============ DEPOSIT: AMOUNT ============
+  if(st==='deposit_amount'){
+    var a = parseFloat(String(text).replace(/[^0-9.]/g,''));
+    if(isNaN(a)||a<1) return "Please enter a valid amount of at least *1 ZMW*. Example: *100*";
+    d.amount=a; flow.state='deposit_network';
+    return "Great! You want to deposit *"+a.toFixed(2)+" ZMW*.\n\nWhich network would you like to use?\n\n"+
+      btnToken('net','mtn','MTN')+' '+btnToken('net','airtel','Airtel')+' '+btnToken('net','zamtel','Zamtel');
+  }
 
-        // ================================================================
-        // FLOW HANDLER — runs BEFORE Gemini/fallback
-        // ================================================================
-        async function handleAssistantFlow(text) {
-            var lower = text.toLowerCase().trim();
-            var state = assistantFlow.state;
-            var d = assistantFlow.data;
+  // ============ DEPOSIT: NETWORK ============
+  if(st==='deposit_network'){
+    var n = matchNetwork(lower);
+    if(!n) return "Please choose one of the buttons above or type: *MTN*, *Airtel*, or *Zamtel*.";
+    if(n==='zamtel'){ flow.state='idle'; flow.data={}; return "🚀 Zamtel deposits are coming soon. Please choose *MTN* or *Airtel* instead."; }
+    d.network=n; flow.state='deposit_phone';
+    var hint = n==='mtn'?'96 or 76':'97, 77, or 57';
+    return "Great — *"+n.toUpperCase()+"* it is.\n\nPlease enter your *9-digit* phone number (without +260).\n\nPrefix should be "+hint+" — e.g. *963219651*";
+  }
 
-            // Global cancel
-            if (state !== 'idle' && /^(cancel|stop|exit|quit)$/i.test(lower)) {
-                assistantFlow.state = 'idle';
-                assistantFlow.data = {};
-                return "No problem — cancelled. 😊 How else can I help you?";
-            }
+  // ============ DEPOSIT: PHONE ============
+  if(st==='deposit_phone'){
+    var p = String(text).replace(/\D/g,'');
+    if(p.length!==9) return "Please enter exactly *9 digits* (without +260). Example: *963219651*";
+    var prefix = p.substring(0,2);
+    var valid = d.network==='mtn' ? ['96','76'] : ['97','77','57'];
+    if(valid.indexOf(prefix)===-1) return "That prefix doesn't match *"+d.network.toUpperCase()+"*.\n\nValid prefixes: "+valid.join(', ')+"\n\nPlease enter your 9-digit phone again.";
+    d.phone='+260'+p;
+    var agent = await loadAgentsForAssistant(d.network);
+    if(!agent){ flow.state='idle'; flow.data={}; return "Sorry, no agent is currently available for *"+d.network.toUpperCase()+"*. Please try another network or contact support."; }
+    d.agentNumber=agent.number; d.accountName=agent.name; d.agentId=agent.id||'';
+    flow.state='deposit_sms';
+    return "✅ Send *ZMW "+d.amount.toFixed(2)+"* to:\n\n"+
+      "📶 *"+d.network.toUpperCase()+"*\n🏦 Agent: *"+agent.number+"*\n👤 Name: *"+agent.name+"*\n📞 Your phone: "+d.phone+"\n\n"+
+      "━━━━━━━━━━━━━\nAfter you send the money, *paste the SMS confirmation* here and I'll submit your deposit. 📝";
+  }
 
-            // ---- START DEPOSIT ----
-            if (state === 'idle') {
-                if (/(i want to deposit|make a deposit|start deposit|deposit money|add money|deposit zmw|^deposit$|^deposit\s)/i.test(lower)) {
-                    assistantFlow.state = 'deposit_amount';
-                    assistantFlow.data = {};
-                    return "Sure! Let's deposit some money 💰\n\nHow much would you like to deposit?\n\nMinimum: *1 ZMW* — no maximum.\n\nType the amount, e.g. *100*";
-                }
-                if (/(i want to withdraw|make a withdrawal|start withdrawal|cash out|^withdraw$|^withdraw\s|withdrawal money)/i.test(lower)) {
-                    if (!isWithdrawTimeAllowed()) {
-                        return "⏰ Withdrawals are only allowed between *09:00* and *17:00* (9 AM – 5 PM).\n\nPlease come back during those hours. Meanwhile I can still help you with deposits, plans, and other questions. 😊";
-                    }
-                    assistantFlow.state = 'withdraw_amount';
-                    assistantFlow.data = {};
-                    return "Got it 😊 Let's set up your withdrawal.\n\nHow much would you like to withdraw? A *10% processing fee* applies.\n\nType the amount in ZMW, e.g. *200*";
-                }
-            }
+  // ============ DEPOSIT: SMS ============
+  if(st==='deposit_sms'){
+    if(String(text).trim().length<15) return "That doesn't look like a full SMS. Please paste the complete confirmation.\n\n(Or type *cancel*.)";
+    var val = validateDepositSmsLocal(text, d);
+    if(!val.valid) return "❌ I couldn't verify your SMS yet:\n\n• "+val.errors.join('\n• ')+"\n\nPlease paste the correct SMS, or type *cancel*.";
+    d.smsText=String(text).trim();
+    flow.state='deposit_confirm';
+    return "Please confirm your deposit:\n\n"+
+      "💰 Amount: *"+d.amount.toFixed(2)+" ZMW*\n"+
+      "📶 Network: *"+d.network.toUpperCase()+"*\n"+
+      "📞 Phone: *"+d.phone+"*\n"+
+      "🏦 Agent: "+d.agentNumber+"\n\n"+
+      "Do you want me to submit this deposit?\n\n"+
+      btnToken('confirm','confirm','✅ Confirm Deposit')+' '+btnToken('confirm','cancel','Cancel');
+  }
 
-            // ---- DEPOSIT: AMOUNT ----
-            if (state === 'deposit_amount') {
-                var amt = parseFloat(text.replace(/[^0-9.]/g, ''));
-                if (isNaN(amt) || amt < 1) {
-                    return "Please enter a valid amount of at least *1 ZMW*.\n\nExample: *100*";
-                }
-                d.amount = amt;
-                assistantFlow.state = 'deposit_network';
-                return "Great! You want to deposit *" + amt.toFixed(2) + " ZMW*.\n\nWhich network will you use?\n\n• MTN\n• Airtel\n• Zamtel";
-            }
-
-            // ---- DEPOSIT: NETWORK ----
-            if (state === 'deposit_network') {
-                var net = null;
-                if (/\bmtn\b/i.test(lower)) net = 'mtn';
-                else if (/\bairtel\b/i.test(lower)) net = 'airtel';
-                else if (/\bzamtel\b/i.test(lower)) net = 'zamtel';
-                if (!net) return "Please choose one of: *MTN*, *Airtel*, or *Zamtel*.";
-                if (net === 'zamtel') {
-                    assistantFlow.state = 'idle';
-                    assistantFlow.data = {};
-                    return "🚀 Zamtel deposits are coming soon. Please choose *MTN* or *Airtel* instead.\n\nWould you like to try a different network?";
-                }
-                d.network = net;
-                assistantFlow.state = 'deposit_phone';
-                var hint = net === 'mtn' ? '96 or 76' : (net === 'airtel' ? '97, 77, or 57' : '95 or 75');
-                return "Great — *" + net.toUpperCase() + "* it is.\n\nPlease enter your 9-digit phone number (without +260).\n\nPrefix should be " + hint + " — e.g. *963219651*";
-            }
-
-            // ---- DEPOSIT: PHONE ----
-            if (state === 'deposit_phone') {
-                var phone = text.replace(/\D/g, '');
-                if (phone.length !== 9) return "Please enter exactly *9 digits* (without +260). Example: *963219651*";
-                var prefix = phone.substring(0, 2);
-                var net2 = d.network;
-                var validP = net2 === 'mtn' ? ['96','76'] : (net2 === 'airtel' ? ['97','77','57'] : ['95','75']);
-                if (validP.indexOf(prefix) === -1) {
-                    return "That prefix doesn't match *" + net2.toUpperCase() + "*.\n\nValid prefixes: " + validP.join(', ') + "\n\nPlease enter your 9-digit phone number again.";
-                }
-                d.phone = '+260' + phone;
-                var agent = await loadAgentsForAssistant(net2);
-                if (!agent) {
-                    assistantFlow.state = 'idle';
-                    assistantFlow.data = {};
-                    return "Sorry, no agent is currently available for *" + net2.toUpperCase() + "*. Please try another network or contact support.";
-                }
-                d.agentNumber = agent.number;
-                d.accountName = agent.name;
-                d.agentId = agent.id || '';
-                assistantFlow.state = 'deposit_sms';
-                return "✅ Here's your payment info:\n\n" +
-                    "📶 Network: *" + net2.toUpperCase() + "*\n" +
-                    "📞 Phone: *" + d.phone + "*\n" +
-                    "💰 Amount: *" + d.amount.toFixed(2) + " ZMW*\n\n" +
-                    "━━━━━━━━━━━━━\n" +
-                    "🏦 *Send the money to:*\n\n" +
-                    "Agent Number: *" + agent.number + "*\n" +
-                    "Account Name: *" + agent.name + "*\n" +
-                    "Amount: *ZMW " + d.amount.toFixed(2) + "*\n" +
-                    "━━━━━━━━━━━━━\n\n" +
-                    "After you send the money, paste the *SMS confirmation* here and I'll submit your deposit for approval. 📝";
-            }
-
-            // ---- DEPOSIT: SMS ----
-            if (state === 'deposit_sms') {
-                if (text.trim().length < 15) {
-                    return "That doesn't look like a full SMS. Please paste the complete SMS confirmation you received from " + d.network.toUpperCase() + ".\n\n(Or type *cancel* to cancel.)";
-                }
-                var validation = validateDepositSms(text, d);
-                if (!validation.valid) {
-                    return "❌ I couldn't verify your SMS yet:\n\n• " + validation.errors.join('\n• ') + "\n\nPlease paste the correct SMS, or type *cancel* to cancel.";
-                }
-                if (!currentUserId) return "Please login first.";
-                try {
-                    await db.collection('deposits').add({
-                        userId: currentUserId,
-                        amount: d.amount,
-                        phone: d.phone,
-                        network: d.network,
-                        status: 'pending',
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        smsText: text,
-                        agentNumber: d.agentNumber,
-                        accountName: d.accountName,
-                        agentId: d.agentId || '',
-                        submittedVia: 'AI Assistant'
-                    });
-                    var savedAmt = d.amount;
-                    assistantFlow.state = 'idle';
-                    assistantFlow.data = {};
-                    return "🎉 *Deposit submitted!*\n\n" +
-                        "Amount: *" + savedAmt.toFixed(2) + " ZMW*\n" +
-                        "Status: *Pending admin approval*\n\n" +
-                        "You can track it in your *History* page. Admin usually approves within 24 hours. 🙏";
-                } catch (err) {
-                    console.error('AI deposit error:', err);
-                    assistantFlow.state = 'idle';
-                    assistantFlow.data = {};
-                    return "❌ Sorry, I couldn't submit your deposit: " + err.message + "\n\nPlease try again or use the *Deposit* page directly.";
-                }
-            }
-
-            // ---- WITHDRAW: AMOUNT ----
-            if (state === 'withdraw_amount') {
-                var amt2 = parseFloat(text.replace(/[^0-9.]/g, ''));
-                if (isNaN(amt2) || amt2 < 1) {
-                    return "Please enter a valid withdrawal amount of at least *1 ZMW*. Example: *100*";
-                }
-                if (!isWithdrawTimeAllowed()) {
-                    assistantFlow.state = 'idle';
-                    assistantFlow.data = {};
-                    return "⏰ Withdrawal window closed. Please try between *09:00* and *17:00*.";
-                }
-                try {
-                    var uDoc = await db.collection('users').doc(currentUserId).get();
-                    var bal = uDoc.exists ? (uDoc.data().walletBalance !== undefined ? uDoc.data().walletBalance : (uDoc.data().balance || 0)) : 0;
-                    if (amt2 > bal) {
-                        return "❌ You don't have enough balance.\n\nYour current wallet balance is *" + bal.toFixed(2) + " ZMW*.\n\nPlease enter a smaller amount or type *cancel*.";
-                    }
-                } catch (e) { console.warn(e); }
-                d.amount = amt2;
-                d.fee = amt2 * 0.10;
-                d.net = amt2 * 0.90;
-                assistantFlow.state = 'withdraw_network';
-                return "Got it!\n\n💰 Amount: *" + amt2.toFixed(2) + " ZMW*\n" +
-                    "💵 Fee (10%): " + d.fee.toFixed(2) + " ZMW\n" +
-                    "✅ You'll receive: *" + d.net.toFixed(2) + " ZMW*\n\n" +
-                    "Which network should we send the money to?\n\n• MTN\n• Airtel\n• Zamtel\n• Bank";
-            }
-
-            // ---- WITHDRAW: NETWORK ----
-            if (state === 'withdraw_network') {
-                var netW = null;
-                if (/\bmtn\b/i.test(lower)) netW = 'mtn';
-                else if (/\bairtel\b/i.test(lower)) netW = 'airtel';
-                else if (/\bzamtel\b/i.test(lower)) netW = 'zamtel';
-                else if (/\bbank\b/i.test(lower)) netW = 'bank';
-                if (!netW) return "Please choose one of: *MTN*, *Airtel*, *Zamtel*, or *Bank*.";
-                d.network = netW;
-                if (netW === 'bank') {
-                    assistantFlow.state = 'withdraw_bank';
-                    return "Which bank?\n\n• EcoBank\n• Zanaco\n• ABSA Bank\n• Stanbic Bank\n\nReply with the bank name.";
-                }
-                assistantFlow.state = 'withdraw_phone';
-                var h2 = netW === 'mtn' ? '96 or 76' : (netW === 'airtel' ? '97, 77, or 57' : '95 or 75');
-                return "Please enter your 9-digit phone number on *" + netW.toUpperCase() + "*.\n\nPrefix should be " + h2 + " — e.g. *963219651*";
-            }
-
-            // ---- WITHDRAW: BANK ----
-            if (state === 'withdraw_bank') {
-                var bk = null;
-                if (/ecobank/i.test(lower)) bk = 'ecobank';
-                else if (/zanaco/i.test(lower)) bk = 'zanaco';
-                else if (/absa/i.test(lower)) bk = 'absa';
-                else if (/stanbic/i.test(lower)) bk = 'stanbic';
-                if (!bk) return "Please choose one of: *EcoBank*, *Zanaco*, *ABSA*, or *Stanbic*.";
-                d.bank = bk;
-                assistantFlow.state = 'withdraw_card';
-                return "Got it: *" + bk.toUpperCase() + "*\n\nPlease enter your *16-digit* bank card number.";
-            }
-
-            // ---- WITHDRAW: CARD ----
-            if (state === 'withdraw_card') {
-                var card = text.replace(/\D/g, '');
-                if (card.length !== 16) return "Please enter exactly *16 digits* for your card number.";
-                d.cardNumber = card;
-                assistantFlow.state = 'withdraw_name';
-                return "Now please enter the *full name* on the account.\n\nExample: *John Kabwe*";
-            }
-
-            // ---- WITHDRAW: PHONE ----
-            if (state === 'withdraw_phone') {
-                var p2 = text.replace(/\D/g, '');
-                if (p2.length !== 9) return "Please enter exactly *9 digits* (without +260). Example: *963219651*";
-                var pref2 = p2.substring(0, 2);
-                var n3 = d.network;
-                var vp2 = n3 === 'mtn' ? ['96','76'] : (n3 === 'airtel' ? ['97','77','57'] : ['95','75']);
-                if (vp2.indexOf(pref2) === -1) {
-                    return "That prefix doesn't match *" + n3.toUpperCase() + "*.\n\nValid: " + vp2.join(', ') + "\n\nPlease enter again.";
-                }
-                d.phone = '+260' + p2;
-                assistantFlow.state = 'withdraw_name';
-                return "Finally, please enter the *full name* registered on that number.\n\nExample: *John Kabwe*";
-            }
-
-            // ---- WITHDRAW: NAME ----
-            if (state === 'withdraw_name') {
-                var name = text.trim();
-                if (name.length < 3) return "Please enter a valid full name (at least 3 characters).";
-                d.accountName = name;
-                assistantFlow.state = 'withdraw_confirm';
-                return "Please confirm your withdrawal:\n\n" +
-                    "📶 Network: *" + d.network.toUpperCase() + "*\n" +
-                    "👤 Name: *" + name + "*\n" +
-                    (d.network === 'bank'
-                        ? "💳 Card: ****" + d.cardNumber.slice(-4) + "\n"
-                        : "📞 Phone: *" + d.phone + "*\n") +
-                    "💰 Amount: *" + d.amount.toFixed(2) + " ZMW*\n" +
-                    "💵 Fee (10%): " + d.fee.toFixed(2) + " ZMW\n" +
-                    "✅ You'll receive: *" + d.net.toFixed(2) + " ZMW*\n\n" +
-                    "Type *confirm* to submit, or *cancel* to abort.";
-            }
-
-            // ---- WITHDRAW: CONFIRM ----
-            if (state === 'withdraw_confirm') {
-                if (/^(confirm|yes|y|ok|submit|proceed)$/i.test(lower)) {
-                    if (!isWithdrawTimeAllowed()) {
-                        assistantFlow.state = 'idle';
-                        assistantFlow.data = {};
-                        return "⏰ Withdrawal window closed. Please try again between 09:00 and 17:00.";
-                    }
-                    try {
-                        var snapshot = d;
-                        await db.runTransaction(async function(transaction) {
-                            var uref = db.collection('users').doc(currentUserId);
-                            var usnap = await transaction.get(uref);
-                            if (!usnap.exists) throw new Error('User not found');
-                            var cur = usnap.data().walletBalance !== undefined ? usnap.data().walletBalance : (usnap.data().balance || 0);
-                            if (cur < snapshot.amount) throw new Error('Insufficient balance');
-                            var nb = cur - snapshot.amount;
-                            transaction.update(uref, { walletBalance: nb, balance: nb });
-
-                            var wref = db.collection('withdrawals').doc();
-                            var wd = {
-                                userId: currentUserId,
-                                amount: snapshot.amount,
-                                netAmount: snapshot.net,
-                                fee: snapshot.fee,
-                                status: 'pending',
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                                network: snapshot.network,
-                                accountName: snapshot.accountName,
-                                phone: snapshot.phone || '',
-                                submittedVia: 'AI Assistant'
-                            };
-                            if (snapshot.network === 'bank') {
-                                wd.bankName = snapshot.bank;
-                                wd.cardNumber = snapshot.cardNumber;
-                            }
-                            transaction.set(wref, wd);
-                        });
-                        var finAmt = d.amount, finNet = d.net;
-                        assistantFlow.state = 'idle';
-                        assistantFlow.data = {};
-                        return "🎉 *Withdrawal submitted successfully!*\n\n" +
-                            "Amount: *" + finAmt.toFixed(2) + " ZMW*\n" +
-                            "You'll receive: *" + finNet.toFixed(2) + " ZMW*\n" +
-                            "Status: *Pending admin approval*\n\n" +
-                            "You can track it in your *History* page. Admin usually processes within 24 hours. 🙏";
-                    } catch (err) {
-                        console.error('AI withdraw error:', err);
-                        assistantFlow.state = 'idle';
-                        assistantFlow.data = {};
-                        return "❌ Sorry, I couldn't submit your withdrawal: " + err.message + "\n\nPlease try again or use the *Withdraw* page directly.";
-                    }
-                }
-                return "Please type *confirm* to submit or *cancel* to abort.";
-            }
-
-            return null;
-        }
-
-        // ================================================================
-        // TOAST
-        // ================================================================
-        function showToast(msg, isError) {
-            var e = document.querySelector('.toast');
-            if (e) e.remove();
-            var t = document.createElement('div');
-            t.className = 'toast ' + (isError ? 'error' : 'success');
-            t.textContent = msg;
-            document.body.appendChild(t);
-            setTimeout(function() { if (t.parentNode) t.remove(); }, 3500);
-        }
-
-        // ================================================================
-        // SCROLL
-        // ================================================================
-        var scrollRAF = null;
-        function scrollToBottom() {
-            if (scrollRAF) cancelAnimationFrame(scrollRAF);
-            scrollRAF = requestAnimationFrame(function() {
-                chatBox.scrollTop = chatBox.scrollHeight;
-                scrollRAF = null;
-            });
-        }
-        function scrollToBottomImmediate() { chatBox.scrollTop = chatBox.scrollHeight; }
-
-        // ================================================================
-        // BLOCK LISTENER
-        // ================================================================
-        function watchBlockStatus(userId) {
-            if (blockUnsub) blockUnsub();
-            blockUnsub = db.collection('users').doc(userId).onSnapshot(function(doc) {
-                if (doc.exists && doc.data().isBlocked === true) {
-                    showToast('⚠️ Account blocked. Redirecting…', true);
-                    setTimeout(function() {
-                        auth.signOut().then(function() { window.location.href = 'login.html'; });
-                    }, 2000);
-                }
-            }, function(err) { console.warn('Block listener:', err); });
-        }
-        window.addEventListener('beforeunload', function() { if (blockUnsub) blockUnsub(); });
-
-        // ================================================================
-        // SVG ICONS
-        // ================================================================
-        var userIconSVG = '<svg class="msg-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
-        var botIconSVG =
-            '<span class="ai-avatar msg-avatar">' +
-                '<span class="avatar-symbol">' +
-                    '<svg viewBox="0 0 24 24"><polyline points="6 6 18 6 6 18 18 18"/></svg>' +
-                '</span>' +
-            '</span>';
-
-        // ================================================================
-        // NAV BUTTONS
-        // ================================================================
-        var navIcons = {
-            marketplace: '<svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>',
-            deposit: '<svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>',
-            withdraw: '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>',
-            saving: '<svg viewBox="0 0 24 24"><path d="M12 2L2 7v10l10 5 10-5V7l-10-5z"/><path d="M2 7l10 5 10-5"/><path d="M12 22V12"/></svg>',
-            loan: '<svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
-            history: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
-            income: '<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
-            treasure: '<svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
-            voucher: '<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M6 10h4"/><path d="M14 10h4"/></svg>',
-            team: '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-            news: '<svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>',
-            dashboard: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
-            support: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
-        };
-        function buildNavButton(text, href, iconSVG, primary) {
-            var cls = 'nav-btn' + (primary ? ' nav-btn-primary' : '');
-            return '<a href="' + href + '" class="' + cls + '">' + iconSVG + ' ' + text + '</a>';
-        }
-        function getNavButtons(question) {
-            var q = question.toLowerCase();
-            var btns = [];
-            if (q.indexOf('marketplace') !== -1 || q.indexOf('invest') !== -1 || q.indexOf('plan') !== -1 || q.indexOf('buy') !== -1 || q.indexOf('return') !== -1) btns.push(buildNavButton('Marketplace', 'marketplace.html', navIcons.marketplace, true));
-            if (q.indexOf('deposit') !== -1) btns.push(buildNavButton('Deposit Page', 'deposit.html', navIcons.deposit, false));
-            if (q.indexOf('withdraw') !== -1) btns.push(buildNavButton('Withdraw Page', 'withdraw.html', navIcons.withdraw, false));
-            if (q.indexOf('saving') !== -1 || q.indexOf('save') !== -1 || q.indexOf('wealth') !== -1 || q.indexOf('reserve') !== -1 || q.indexOf('growth') !== -1) btns.push(buildNavButton('Saving', 'saving.html', navIcons.saving, false));
-            if (q.indexOf('loan') !== -1 || q.indexOf('borrow') !== -1 || q.indexOf('flex') !== -1 || q.indexOf('goldmine') !== -1) btns.push(buildNavButton('Loans', 'loan.html', navIcons.loan, false));
-            if (q.indexOf('history') !== -1 || q.indexOf('transaction') !== -1 || q.indexOf('record') !== -1) btns.push(buildNavButton('History', 'history.html', navIcons.history, false));
-            if (q.indexOf('income') !== -1 || q.indexOf('earning') !== -1 || q.indexOf('profit') !== -1 || q.indexOf('claim') !== -1) btns.push(buildNavButton('Income', 'income.html', navIcons.income, false));
-            if (q.indexOf('treasure') !== -1 || q.indexOf('code') !== -1) btns.push(buildNavButton('Treasure', 'treasure.html', navIcons.treasure, false));
-            if (q.indexOf('voucher') !== -1) btns.push(buildNavButton('Voucher', 'voucher.html', navIcons.voucher, false));
-            if (q.indexOf('team') !== -1 || q.indexOf('referral') !== -1 || q.indexOf('refer') !== -1 || q.indexOf('invite') !== -1) btns.push(buildNavButton('Team', 'team.html', navIcons.team, false));
-            if (q.indexOf('news') !== -1 || q.indexOf('update') !== -1 || q.indexOf('announcement') !== -1) btns.push(buildNavButton('News', 'news.html', navIcons.news, false));
-            if (q.indexOf('support') !== -1 || q.indexOf('contact') !== -1 || q.indexOf('help') !== -1 || q.indexOf('error') !== -1 || q.indexOf('failed') !== -1 || q.indexOf('not working') !== -1 || q.indexOf('broken') !== -1) btns.push(buildNavButton('Support', 'support.html', navIcons.support, true));
-            if (q.indexOf('daily') !== -1 || q.indexOf('check') !== -1 || q.indexOf('checkin') !== -1 || q.indexOf('check-in') !== -1) btns.push(buildNavButton('Daily Check-in', 'daily-check.html', navIcons.dashboard, false));
-            if (btns.length === 0) btns.push(buildNavButton('Dashboard', 'dashboard.html', navIcons.dashboard, false));
-            var seen = {}, unique = [];
-            btns.forEach(function(b) {
-                var m = b.match(/href="([^"]+)"/);
-                if (m && !seen[m[1]]) { seen[m[1]] = true; unique.push(b); }
-            });
-            return unique.slice(0, 3);
-        }
-
-        // ================================================================
-        // EMAIL COMPONENT
-        // ================================================================
-        function buildEmailComponent() {
-            return '<div class="email-contact">' +
-                '<span class="email-addr">' + SUPPORT_EMAIL + '</span>' +
-                '<a href="mailto:' + SUPPORT_EMAIL + '" class="email-btn">' +
-                '<svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> Email</a>' +
-                '<button type="button" class="email-btn" id="copyEmailBtn">' +
-                '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>' +
-                '</div>';
-        }
-
-        // ================================================================
-        // FORMAT AI RESPONSE (fixes raw nav HTML + preserves all live HTML)
-        // ================================================================
-        function formatAIResponse(text) {
-            var out = String(text == null ? '' : text);
-
-            // Pull out nav markers
-            var navGroups = [];
-            var navMarkerRe = new RegExp(NAV_OPEN + '([\\s\\S]*?)' + NAV_CLOSE, 'g');
-            out = out.replace(navMarkerRe, function(m, inner) {
-                navGroups.push(inner);
-                return '@@NAV_' + (navGroups.length - 1) + '@@';
-            });
-
-            // Extract legacy raw nav-btn-group blocks (from already-saved messages)
-            out = out.replace(/<div class="nav-btn-group">[\s\S]*?<\/div>/g, function(m) {
-                navGroups.push(m);
-                return '@@NAV_' + (navGroups.length - 1) + '@@';
-            });
-            out = out.replace(/(?:<a\b[^>]*class="nav-btn[^"]*"[^>]*>[\s\S]*?<\/a>\s*)+/g, function(m) {
-                navGroups.push('<div class="nav-btn-group">' + m + '</div>');
-                return '@@NAV_' + (navGroups.length - 1) + '@@';
-            });
-
-            // Extract email placeholders
-            var hasEmail = out.indexOf('[EMAIL_CONTACT]') !== -1;
-            if (hasEmail) out = out.split('[EMAIL_CONTACT]').join(EMAIL_TOKEN);
-
-            // Escape remaining HTML
-            var safe = out.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-            // Line-by-line
-            var lines = safe.split('\n');
-            var inList = false, listType = null, result = [];
-            for (var i = 0; i < lines.length; i++) {
-                var line = lines[i], trimmed = line.trim();
-                var ol = trimmed.match(/^(\d+)\.\s+(.+)/);
-                var ul = trimmed.match(/^[-•]\s+(.+)/);
-                if (ol) {
-                    if (!inList || listType !== 'ol') {
-                        if (inList) result.push(listType === 'ol' ? '</ol>' : '</ul>');
-                        inList = true; listType = 'ol'; result.push('<ol>');
-                    }
-                    result.push('<li>' + ol[2] + '</li>');
-                } else if (ul) {
-                    if (!inList || listType !== 'ul') {
-                        if (inList) result.push(listType === 'ol' ? '</ol>' : '</ul>');
-                        inList = true; listType = 'ul'; result.push('<ul>');
-                    }
-                    result.push('<li>' + ul[1] + '</li>');
-                } else {
-                    if (inList) { result.push(listType === 'ol' ? '</ol>' : '</ul>'); inList = false; listType = null; }
-                    if (trimmed === '') result.push('<br>');
-                    else if (/^─+$/.test(trimmed)) result.push('<hr>');
-                    else if (/^\*[^*]+\*$/.test(trimmed)) {
-                        // *heading* on its own line
-                        result.push('<span class="section-title">' + trimmed.replace(/^\*|\*$/g, '') + '</span>');
-                    } else if (/^[A-Z][A-Za-z ]{2,40}:$/.test(trimmed)) {
-                        result.push('<span class="section-title">' + trimmed + '</span>');
-                    } else {
-                        var f = trimmed
-                            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-                            .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>')
-                            .replace(/(^|[^_])_([^_\n]+)_(?!_)/g, '$1<em>$2</em>');
-                        result.push(f);
-                    }
-                }
-            }
-            if (inList) result.push(listType === 'ol' ? '</ol>' : '</ul>');
-
-            var html = result.join('<br>');
-            if (hasEmail) html = html.split(EMAIL_TOKEN).join(buildEmailComponent());
-            html = html.replace(/@@NAV_(\d+)@@/g, function(m, idx) { return navGroups[parseInt(idx, 10)] || ''; });
-            html = html.replace(/(^|[^"'>])(https?:\/\/[^\s<]+)/g, function(m, p, url) {
-                return p + '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>';
-            });
-            html = html.replace(/<br>\s*(<\/?(?:ul|ol)>)/g, '$1');
-            html = html.replace(/(<\/(?:ul|ol)>)\s*<br>/g, '$1');
-            html = html.replace(/(@@NAV_\d+@@)\s*<br>/g, '$1');
-            return html;
-        }
-
-        function displayMessage(doc) {
-            var data = doc.data();
-            if (!data || !data.text) return;
-            var msgDiv = document.createElement('div');
-            msgDiv.className = 'message ' + (data.isUser ? 'user-message' : 'ai-message');
-            if (data.isUser) {
-                msgDiv.innerHTML = userIconSVG + '<div class="msg-content">' + escapeHtml(data.text) + '</div>';
-            } else {
-                msgDiv.innerHTML = botIconSVG + '<div class="msg-content">' + formatAIResponse(data.text) + '</div>';
-            }
-            var empty = document.getElementById('emptyState');
-            if (empty) empty.remove();
-            chatBox.appendChild(msgDiv);
-            if (isFirstLoad) { scrollToBottomImmediate(); isFirstLoad = false; }
-            else scrollToBottom();
-        }
-
-        function escapeHtml(text) {
-            var div = document.createElement('div');
-            div.textContent = String(text);
-            return div.innerHTML;
-        }
-
-        function showTyping() {
-            removeTyping();
-            var div = document.createElement('div');
-            div.className = 'typing-indicator';
-            div.id = 'typingIndicator';
-            div.innerHTML = botIconSVG + ' Sajvera Campaign is typing<span class="dots"><span></span><span></span><span></span></span>';
-            chatBox.appendChild(div);
-            scrollToBottom();
-        }
-        function removeTyping() {
-            var e = document.getElementById('typingIndicator');
-            if (e) e.remove();
-        }
-
-        async function saveMessage(text, isUser) {
-            if (!currentUserId) return;
-            if (!messagesRef) messagesRef = db.collection('chats').doc(currentUserId).collection('messages');
-            await messagesRef.add({
-                text: text, isUser: isUser,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-        }
-
-        function loadChatHistory() {
-            if (unsubscribe) unsubscribe();
-            if (!currentUserId) return;
-            messagesRef = db.collection('chats').doc(currentUserId).collection('messages');
-            var query = messagesRef.orderBy('timestamp', 'asc');
-            var firstBatch = true;
-            unsubscribe = query.onSnapshot(function(snap) {
-                if (snap.empty && firstBatch) {
-                    chatBox.innerHTML =
-                        '<div class="empty-state" id="emptyState">' +
-                            '<span class="ai-avatar empty-avatar">' +
-                                '<span class="avatar-symbol">' +
-                                    '<svg viewBox="0 0 24 24"><polyline points="6 6 18 6 6 18 18 18"/></svg>' +
-                                '</span>' +
-                            '</span>' +
-                            '<div class="title">Sajvera Campaign</div>' +
-                            '<div class="sub">Online • 24/7 — deposit or withdraw right here in chat</div>' +
-                        '</div>';
-                    var welcome =
-                        "Hello 👋 It's me, Sajvera Campaign — your Sajvera Capital assistant.\n\n" +
-                        "I can help you with *deposits* and *withdrawals* right here in the chat, plus explain any part of the platform: Marketplace, Saving, Loans, Daily Check-in, Treasure Hunt, referrals, and more.\n\n" +
-                        "Try saying:\n• *deposit*\n• *withdraw*\n• *how do I save?*\n\n" +
-                        "What would you like to do? 😊";
-                    saveMessage(welcome, false).catch(console.warn);
-                    firstBatch = false; return;
-                }
-                if (!snap.empty) {
-                    var empty = document.getElementById('emptyState');
-                    if (empty) empty.remove();
-                    chatBox.innerHTML = '';
-                    snap.forEach(function(doc) { displayMessage(doc); });
-                    scrollToBottomImmediate();
-                }
-                firstBatch = false;
-            }, function(err) {
-                console.error('Chat listener error:', err);
-                chatBox.innerHTML = '<div class="empty-state"><div class="title">Error loading chat</div><div class="sub">Please refresh the page</div></div>';
-            });
-        }
-
-        var marketplacePlansCache = null;
-        async function fetchMarketplacePlans() {
-            if (marketplacePlansCache) return marketplacePlansCache;
-            try {
-                var snap = await db.collection('marketplacePlans').where('showOnMarketplace', '==', true).limit(3).get();
-                var plans = [];
-                snap.forEach(function(doc) { var data = doc.data(); data.id = doc.id; plans.push(data); });
-                marketplacePlansCache = plans;
-                return plans;
-            } catch (err) { console.warn('Plans fetch failed:', err); return null; }
-        }
-
-        // ================================================================
-        // FALLBACK RESPONSE
-        // ================================================================
-        function getFallbackResponse(userMessage) {
-            var raw = String(userMessage || '').trim();
-            var msg = raw.toLowerCase();
-
-            if (/^(hi|hello|hey|yo|sup|howdy|hie|hei)[\s!.]*$/i.test(raw)) return "Hello 👋 Welcome to Sajvera Capital! I'm Sajvera Campaign. 😊 How can I help you today?";
-            if (/^(good\s*morning|morning)[\s!.]*$/i.test(raw)) return "Good morning! ☀️😊 Welcome to Sajvera Capital. How can I assist you today?";
-            if (/^(good\s*afternoon)[\s!.]*$/i.test(raw)) return "Good afternoon! 😊 Welcome to Sajvera Capital. How can I help you today?";
-            if (/^(good\s*evening|evening)[\s!.]*$/i.test(raw)) return "Good evening! 🌙😊 Welcome to Sajvera Capital. What can I help you with?";
-            if (msg.indexOf('how are you') !== -1 || msg.indexOf('how you doing') !== -1) return "I'm doing well, thank you! 😊 I'm here and ready to help you with Sajvera Capital. What would you like to know?";
-            if (/^(thanks|thank you|thanx|thx|tysm)[\s!.]*$/i.test(raw) || msg.indexOf('thank you') !== -1) return "You're most welcome! 😊 Anything else I can help with?";
-            if (msg.indexOf('who are you') !== -1 || msg.indexOf('what are you') !== -1 || msg.indexOf('your name') !== -1) return "I'm Sajvera Campaign 🤖 — the virtual assistant for Sajvera Capital. I can help you deposit, withdraw, and understand any part of the platform.";
-            if (msg.indexOf('how was this ai') !== -1 || msg.indexOf('who programmed') !== -1 || msg.indexOf('who built you') !== -1 || msg.indexOf('are you human') !== -1 || msg.indexOf('are you chatgpt') !== -1) return "I'm Sajvera Campaign, the platform's virtual assistant 🤖. I help users understand Sajvera Capital, and I can guide deposits and withdrawals right here. I don't control accounts or approve transactions — admins do that.";
-            if (msg.indexOf('admin') !== -1 || msg.indexOf('owner') !== -1 || msg.indexOf('founder') !== -1 || msg.indexOf('ceo') !== -1 || msg.indexOf('manager') !== -1) return "I can help you with information about the platform, but I don't want to give you unverified personal information. 😊\n\nFor official management or ownership questions, please contact Sajvera Capital through the official Support page.\n\n[EMAIL_CONTACT]";
-            if (msg.indexOf('whatsapp') !== -1 || msg.indexOf('group link') !== -1 || msg.indexOf('join group') !== -1 || msg.indexOf('telegram') !== -1) return "For official group and channel links, please check the Support page — that's where Sajvera Capital shares verified contact details. 📢\n\n[EMAIL_CONTACT]";
-            if (msg.indexOf('contact') !== -1 || msg.indexOf('support') !== -1 || msg.indexOf('help me') !== -1 || msg.indexOf('customer care') !== -1) return "You can reach the official Sajvera Capital support team by email here:\n\n[EMAIL_CONTACT]\n\nPlease include your registered name and a short description of your issue. 🆘";
-            if (msg.indexOf('error') !== -1 || msg.indexOf('not working') !== -1 || msg.indexOf('failed') !== -1 || msg.indexOf('broken') !== -1 || msg.indexOf('stuck') !== -1) return "I'm sorry you're having trouble 😟. Please tell me which section (Deposit, Withdraw, etc.) and what error you see.\n\nIf it's an account or transaction issue I can't fix here, please contact Support:\n\n[EMAIL_CONTACT]";
-
-            // Deposit — now with AI-flow suggestion
-            if (msg.indexOf('deposit') !== -1) return "You can deposit right here in the chat 😊 — just type *deposit* and I'll walk you through it step by step.\n\nOr use the Deposit page from your dashboard if you prefer.\n\nMinimum: *1 ZMW* — no maximum.";
-
-            // Withdraw — with time window + AI-flow suggestion
-            if (msg.indexOf('withdraw') !== -1 || msg.indexOf('cash out') !== -1) return "You can withdraw right here in the chat 😊 — just type *withdraw* and I'll guide you.\n\n📌 *Important:*\n• A *10% processing fee* applies.\n• Withdrawals are allowed between *09:00 and 17:00* (9 AM – 5 PM).\n• Once submitted, it shows in your History as *Pending* until an admin approves it.\n\nMoney usually reaches your account *within 24 hours* after approval.";
-
-            if (msg.indexOf('history') !== -1 || msg.indexOf('transaction') !== -1 || msg.indexOf('record') !== -1) return "You can see all your transactions in the History section 📊 — deposits, withdrawals, investments, savings, loans, bonuses and more.\n\nWithdrawals and deposits appear there as *Pending* until an admin approves them.";
-            if (msg.indexOf('treasure') !== -1) return "🎁 Treasure Hunt is a reward feature on Sajvera Capital.\n\nYou receive a 7-character treasure code and paste it into the Treasure Hunt page to claim your reward. Each code can only be used once.";
-            if (msg.indexOf('daily check') !== -1 || msg.indexOf('check-in') !== -1 || msg.indexOf('check in') !== -1 || msg.indexOf('checkin') !== -1) return "📅 Daily Check-in is a 7-day reward cycle.\n\nYou check in once per day and claim your reward in order. The 7th day usually gives the biggest reward. After Day 7, the cycle restarts from Day 1.";
-            if (msg.indexOf('marketplace') !== -1 || msg.indexOf('invest') !== -1 || msg.indexOf('plan') !== -1 || msg.indexOf('buy') !== -1) {
-                var reply = "🛒 Marketplace is where investment plans live.\n\nEach plan offers two actions:\n• Invest Now — earn its configured daily return.\n• Buy Now — receive capital + profit at maturity.\n\nAll plan details are shown on the card.";
-                if (marketplacePlansCache && marketplacePlansCache.length > 0) {
-                    var p = marketplacePlansCache[0];
-                    reply += "\n\nExample: *" + (p.planName || 'Plan') + "* — K" + (p.investmentPrice || 0) + " · " + (p.earningDays || 0) + " days · daily return K" + (p.dailyReturn || 0) + ".";
-                }
-                return reply;
-            }
-            if (msg.indexOf('saving') !== -1 || msg.indexOf('save') !== -1 || msg.indexOf('wealth') !== -1 || msg.indexOf('reserve') !== -1 || msg.indexOf('growth') !== -1) return "💾 Sajvera Capital offers three saving branches:\n\n• Wealth — long-term savings (60 to 360 days).\n• Reserve — secure savings with maturity interest (min K100).\n• Growth — goal-based savings with tiered interest (min K350).";
-            if (msg.indexOf('loan') !== -1 || msg.indexOf('borrow') !== -1 || msg.indexOf('flex') !== -1 || msg.indexOf('goldmine') !== -1) return "Sajvera Capital offers three loan branches:\n\n• Sajvera Flex — flexible support.\n• PureOre Support — short-term support.\n• GoldMine Advance — premium loans.\n\nEligibility depends on your balance, team and investments. Open the Loans page to apply.";
-            if (msg.indexOf('referral') !== -1 || msg.indexOf('refer') !== -1 || msg.indexOf('team') !== -1 || msg.indexOf('invite') !== -1) return "👥 Your referral code is in the Team page. Share your unique link.\n\nWhen someone registers with your code, makes their first completed deposit, and buys an investment plan, you earn a 5% bonus on that deposit.";
-            if (msg.indexOf('income') !== -1 || msg.indexOf('claim') !== -1 || msg.indexOf('profit') !== -1 || msg.indexOf('earning') !== -1) return "📊 The Income page shows your active investments and daily income. You can claim daily income once every 24 hours on weekdays.";
-            if (msg.indexOf('news') !== -1 || msg.indexOf('announcement') !== -1 || msg.indexOf('update') !== -1) return "📰 The News page has official announcements and updates. Check it regularly to stay informed.";
-            if (msg.indexOf('voucher') !== -1) return "🎟 Vouchers are available in the Voucher section. You can redeem valid vouchers there.";
-            if (msg.indexOf('password') !== -1) return "To change your password:\n\n1. Go to the Me page.\n2. Tap Change Password.\n3. Enter your email, old password, new password and confirm.\n\nIf you forgot your password, please contact support:\n\n[EMAIL_CONTACT]";
-            if (msg.indexOf('profile') !== -1 || msg.indexOf('my account') !== -1 || msg.indexOf('me page') !== -1) return "Your Me page shows your profile, balance, referral code and options like Change Password.";
-            if (msg.indexOf('what is this platform') !== -1 || msg.indexOf('what is sajvera') !== -1 || msg.indexOf('about the platform') !== -1 || msg.indexOf('tell me about') !== -1) return "Sajvera Capital is a financial platform where you can:\n\n• Invest through Marketplace plans.\n• Save through three saving branches.\n• Apply for loans.\n• Earn bonuses through referrals.\n• Claim daily rewards through Daily Check-in and Treasure Hunt.\n\nAnd now, you can also *deposit* or *withdraw* right here in the chat!";
-            return "I don't want to guess and give you the wrong information. 😊\n\nFor the most accurate answer, please contact Sajvera Capital through the official Support page:\n\n[EMAIL_CONTACT]\n\nYou can also try:\n• *deposit*\n• *withdraw*\n• ask about Marketplace, Saving, Loans, Daily Check-in, Treasure Hunt, referrals…";
-        }
-
-        async function getGeminiResponse(userMessage) {
-            if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') return null;
-            try {
-                var sysPrompt =
-                    "You are Sajvera Campaign, the virtual assistant for Sajvera Capital. " +
-                    "Speak naturally and professionally. Use emojis sparingly. " +
-                    "Key facts:\n" +
-                    "- Support email only: Pureorecapital@gmail.com.\n" +
-                    "- Withdrawals: 10% fee, allowed 09:00–17:00, money reaches account within 24h after approval.\n" +
-                    "- Deposits: minimum 1 ZMW, no maximum. Admin approval usually within 24h.\n" +
-                    "- Marketplace offers Invest Now (daily returns) and Buy Now (maturity payout).\n" +
-                    "- Saving: Wealth, Reserve, Growth.\n" +
-                    "- Loans: Sajvera Flex, PureOre Support, GoldMine Advance.\n" +
-                    "- Treasure Hunt: 7-character codes, one-time use.\n" +
-                    "- Daily Check-in: 7-day cycle, resets after Day 7.\n" +
-                    "- Never claim to have modified accounts or balances.\n" +
-                    "- For admin/owner questions, direct to Support.\n" +
-                    "Answer directly.\n\nUser: " + userMessage;
-                var res = await fetch(GEMINI_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: sysPrompt }] }] })
-                });
-                if (!res.ok) return null;
-                var data = await res.json();
-                if (data.candidates && data.candidates.length > 0) {
-                    var c = data.candidates[0].content;
-                    if (c && c.parts && c.parts.length > 0) return c.parts[0].text;
-                }
-                return null;
-            } catch (err) { console.warn('Gemini error:', err); return null; }
-        }
-
-        // ================================================================
-        // SEND MESSAGE
-        // ================================================================
-        async function sendMessage(text) {
-            if (!text || !text.trim()) return;
-            if (!currentUserId) return;
-            var cleanText = text.trim();
-            userInput.disabled = true;
-            sendBtn.disabled = true;
-            await saveMessage(cleanText, true);
-            showTyping();
-            try {
-                // 1) Check flow FIRST
-                var flowReply = await handleAssistantFlow(cleanText);
-                var reply;
-                if (flowReply) {
-                    reply = flowReply;
-                } else {
-                    // 2) Otherwise, Gemini → fallback
-                    reply = await getGeminiResponse(cleanText);
-                    if (!reply || !reply.trim()) reply = getFallbackResponse(cleanText);
-                    var navBtns = getNavButtons(cleanText);
-                    if (navBtns.length > 0) reply = reply + '\n\n' + NAV_OPEN + navBtns.join(' ') + NAV_CLOSE;
-                }
-                removeTyping();
-                await saveMessage(reply, false);
-                userInput.disabled = false;
-                sendBtn.disabled = false;
-                userInput.focus();
-            } catch (err) {
-                console.error('sendMessage error:', err);
-                removeTyping();
-                var fb = getFallbackResponse(cleanText);
-                await saveMessage(fb, false);
-                userInput.disabled = false;
-                sendBtn.disabled = false;
-                userInput.focus();
-            }
-        }
-
-        function handleSend() {
-            var text = userInput.value.trim();
-            if (text) { sendMessage(text); userInput.value = ''; }
-        }
-
-        // ================================================================
-        // COPY EMAIL
-        // ================================================================
-        document.addEventListener('click', function(e) {
-            var t = e.target.closest('#copyEmailBtn');
-            if (!t) return;
-            var email = SUPPORT_EMAIL;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(email).then(function() {
-                    showToast('Email copied', false);
-                    t.classList.add('copy-success');
-                    setTimeout(function() { t.classList.remove('copy-success'); }, 2000);
-                }).catch(function() { fallbackCopy(email, t); });
-            } else fallbackCopy(email, t);
+  // ============ DEPOSIT: CONFIRM ============
+  if(st==='deposit_confirm'){
+    if(/^(cancel|no)$/i.test(lower)){ flow.state='idle'; flow.data={}; return "No problem, deposit cancelled. 😊"; }
+    if(/^(confirm|yes|y|ok|submit)$/i.test(lower)){
+      try{
+        await db.collection('deposits').add({
+          userId: currentUserId,
+          amount: d.amount,
+          phone: d.phone,
+          network: d.network,
+          status: 'pending',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          smsText: d.smsText,
+          agentNumber: d.agentNumber,
+          accountName: d.accountName,
+          agentId: d.agentId
         });
-        function fallbackCopy(text, btn) {
-            var ta = document.createElement('textarea');
-            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-            document.body.appendChild(ta); ta.select();
-            try {
-                document.execCommand('copy');
-                showToast('Email copied', false);
-                btn.classList.add('copy-success');
-                setTimeout(function() { btn.classList.remove('copy-success'); }, 2000);
-            } catch (e) { showToast('Could not copy.', true); }
-            document.body.removeChild(ta);
-        }
+        var amtOK = d.amount;
+        flow.state='idle'; flow.data={};
+        return "🎉 *Deposit submitted successfully!*\n\n"+
+          "💰 Amount: *"+amtOK.toFixed(2)+" ZMW*\n"+
+          "📋 Status: *Pending admin approval*\n\n"+
+          "It now appears in your *History* page. Admin usually approves within 24 hours. 🙏";
+      }catch(err){
+        console.error('deposit submit failed', err);
+        flow.state='idle'; flow.data={};
+        var em = (err && err.message) ? err.message : 'Please try again.';
+        return "❌ I couldn't submit your deposit: "+em+"\n\nIf this keeps happening, please use the *Deposit* page or contact support:\n\n[EMAIL_CONTACT]";
+      }
+    }
+    return "Please tap *Confirm Deposit* or *Cancel* above.";
+  }
 
-        // ================================================================
-        // AUTH
-        // ================================================================
-        var authResolved = false;
-        var redirectTimeout = null;
-        auth.onAuthStateChanged(async function(user) {
-            if (user) {
-                authResolved = true;
-                if (redirectTimeout) { clearTimeout(redirectTimeout); redirectTimeout = null; }
-                currentUserId = user.uid;
-                watchBlockStatus(currentUserId);
-                fetchMarketplacePlans();
-                loadDepositRulesForAssistant();
-                loadChatHistory();
-                setTimeout(function() { userInput.focus(); }, 600);
-            } else {
-                if (!authResolved) {
-                    if (!redirectTimeout) {
-                        redirectTimeout = setTimeout(function() {
-                            if (!auth.currentUser) window.location.href = 'login.html';
-                        }, 2000);
-                    }
-                } else window.location.href = 'login.html';
-            }
-        }, function(err) { console.error('Auth error:', err); window.location.href = 'login.html'; });
+  // ============ WITHDRAW: AMOUNT ============
+  if(st==='withdraw_amount'){
+    var wa = parseFloat(String(text).replace(/[^0-9.]/g,''));
+    if(isNaN(wa)||wa<1) return "Please enter a valid amount of at least *1 ZMW*. Example: *200*";
+    if(!withinWithdrawWindow()){ flow.state='idle'; flow.data={}; return "⏰ Withdrawal window is closed. Please try again between *09:00* and *17:00*."; }
+    await loadBalance();
+    if(wa>userBalance) return "❌ Insufficient balance.\n\nYour wallet: *"+userBalance.toFixed(2)+" ZMW*.\n\nPlease enter a smaller amount or type *cancel*.";
+    d.amount=wa; d.fee=wa*0.10; d.net=wa-d.fee;
+    flow.state='withdraw_network';
+    return "Got it!\n\n💰 Amount: *"+wa.toFixed(2)+" ZMW*\n💵 Fee (10%): "+d.fee.toFixed(2)+" ZMW\n✅ You'll receive: *"+d.net.toFixed(2)+" ZMW*\n\nWhich network should we send the money to?\n\n"+
+      btnToken('net','mtn','MTN')+' '+btnToken('net','airtel','Airtel')+' '+btnToken('net','zamtel','Zamtel')+' '+btnToken('net','bank','Bank');
+  }
 
-        // ================================================================
-        // EVENTS
-        // ================================================================
-        sendBtn.addEventListener('click', handleSend);
-        userInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  // ============ WITHDRAW: NETWORK ============
+  if(st==='withdraw_network'){
+    var wn = matchNetwork(lower);
+    if(!wn) return "Please choose one of: *MTN*, *Airtel*, *Zamtel*, or *Bank*.";
+    d.network=wn;
+    if(wn==='bank'){ flow.state='withdraw_bank'; return "Which bank?\n\n"+btnToken('bank','ecobank','EcoBank')+' '+btnToken('bank','zanaco','Zanaco')+' '+btnToken('bank','absa','ABSA')+' '+btnToken('bank','stanbic','Stanbic'); }
+    flow.state='withdraw_phone';
+    var hint2 = wn==='mtn'?'96 or 76':wn==='airtel'?'97, 77, or 57':'95 or 75';
+    return "Please enter your 9-digit phone number on *"+wn.toUpperCase()+"*.\n\nPrefix should be "+hint2+" — e.g. *963219651*";
+  }
+
+  // ============ WITHDRAW: BANK ============
+  if(st==='withdraw_bank'){
+    var b=null;
+    if(/ecobank/i.test(lower)) b='ecobank';
+    else if(/zanaco/i.test(lower)) b='zanaco';
+    else if(/absa/i.test(lower)) b='absa';
+    else if(/stanbic/i.test(lower)) b='stanbic';
+    if(!b) return "Please choose: *EcoBank*, *Zanaco*, *ABSA*, or *Stanbic*.";
+    d.bank=b; flow.state='withdraw_card';
+    return "Got it — *"+b.toUpperCase()+"*.\n\nPlease enter your *16-digit* bank card number.";
+  }
+
+  // ============ WITHDRAW: CARD ============
+  if(st==='withdraw_card'){
+    var card = String(text).replace(/\D/g,'');
+    if(card.length!==16) return "Please enter exactly *16 digits* for your card number.";
+    d.cardNumber=card; flow.state='withdraw_name';
+    return "Now please enter the *full name* on the account.\n\nExample: *John Kabwe*";
+  }
+
+  // ============ WITHDRAW: PHONE ============
+  if(st==='withdraw_phone'){
+    var wp = String(text).replace(/\D/g,'');
+    if(wp.length!==9) return "Please enter exactly *9 digits* (without +260). Example: *963219651*";
+    var pref=wp.substring(0,2);
+    var vp = d.network==='mtn' ? ['96','76'] : d.network==='airtel' ? ['97','77','57'] : ['95','75'];
+    if(vp.indexOf(pref)===-1) return "That prefix doesn't match *"+d.network.toUpperCase()+"*.\n\nValid: "+vp.join(', ')+"\n\nPlease enter again.";
+    d.phone='+260'+wp; flow.state='withdraw_name';
+    return "Finally, please enter the *full name* registered on that number.\n\nExample: *John Kabwe*";
+  }
+
+  // ============ WITHDRAW: NAME ============
+  if(st==='withdraw_name'){
+    var nm = String(text).trim();
+    if(nm.length<3) return "Please enter a valid full name (at least 3 characters).";
+    d.accountName=nm; flow.state='withdraw_confirm';
+    var card2 = '📶 Network: *'+d.network.toUpperCase()+'*\n'+
+      '👤 Name: *'+nm+'*\n'+
+      (d.network==='bank' ? '💳 Card: ****'+d.cardNumber.slice(-4)+'\n' : '📞 Phone: *'+d.phone+'*\n')+
+      '💰 Amount: *'+d.amount.toFixed(2)+' ZMW*\n'+
+      '📉 Fee (10%): '+d.fee.toFixed(2)+' ZMW\n'+
+      '💰 You will receive: *'+d.net.toFixed(2)+' ZMW*\n';
+    return "You are requesting:\n\n"+card2+"\nDo you want me to submit this withdrawal?\n\n"+
+      btnToken('confirm','confirm','✅ Confirm Withdrawal')+' '+btnToken('confirm','cancel','Cancel');
+  }
+
+  // ============ WITHDRAW: CONFIRM ============
+  if(st==='withdraw_confirm'){
+    if(/^(cancel|no)$/i.test(lower)){ flow.state='idle'; flow.data={}; return "No problem, withdrawal cancelled. 😊"; }
+    if(/^(confirm|yes|y|ok|submit)$/i.test(lower)){
+      if(!withinWithdrawWindow()){ flow.state='idle'; flow.data={}; return "⏰ Withdrawal window closed. Please try again between 09:00 and 17:00."; }
+      try{
+        var data = d;
+        await db.runTransaction(async function(transaction){
+          var userRef = db.collection('users').doc(currentUserId);
+          var userSnap = await transaction.get(userRef);
+          if(!userSnap.exists) throw new Error('User not found');
+          var cur = userSnap.data().walletBalance !== undefined ? userSnap.data().walletBalance : (userSnap.data().balance || 0);
+          if(cur < data.amount) throw new Error('Insufficient balance');
+          var nb = cur - data.amount;
+          transaction.update(userRef, { walletBalance: nb, balance: nb });
+
+          var wref = db.collection('withdrawals').doc();
+          var wd = {
+            userId: currentUserId,
+            amount: data.amount,
+            netAmount: data.net,
+            fee: data.fee,
+            status: 'pending',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            network: data.network,
+            accountName: data.accountName,
+            phone: data.phone || ''
+          };
+          if(data.network==='bank'){ wd.bankName=data.bank; wd.cardNumber=data.cardNumber; }
+          transaction.set(wref, wd);
         });
-        backBtn.addEventListener('click', function() { window.location.href = 'dashboard.html'; });
-        var resizeTimer;
-        window.addEventListener('resize', function() {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function() { scrollToBottomImmediate(); }, 200);
-        });
+        var fin=d.amount, fnet=d.net;
+        flow.state='idle'; flow.data={};
+        return "🎉 *Withdrawal submitted successfully!*\n\n"+
+          "💰 Amount: *"+fin.toFixed(2)+" ZMW*\n"+
+          "✅ You'll receive: *"+fnet.toFixed(2)+" ZMW*\n"+
+          "📋 Status: *Pending admin approval*\n\n"+
+          "It now appears in your *History* page. Admin usually processes within 24 hours. 🙏";
+      }catch(err){
+        console.error('withdraw submit failed', err);
+        flow.state='idle'; flow.data={};
+        var em2 = (err && err.message) ? err.message : 'Please try again.';
+        return "❌ I couldn't submit your withdrawal: "+em2+"\n\nIf this keeps happening, please use the *Withdraw* page or contact support:\n\n[EMAIL_CONTACT]";
+      }
+    }
+    return "Please tap *Confirm Withdrawal* or *Cancel* above.";
+  }
 
-        console.log('✨ Sajvera Campaign — deposit & withdraw enabled in chat');
-        console.log('📥 Deposits save to "deposits" collection · 📤 Withdrawals save to "withdrawals"');
-        console.log('⏰ Withdrawal window: 09:00–17:00');
-    </script>
+  return null;
+}
+
+function matchNetwork(lower){
+  if(/\bmtn\b/i.test(lower)) return 'mtn';
+  if(/\bairtel\b/i.test(lower)) return 'airtel';
+  if(/\bzamtel\b/i.test(lower)) return 'zamtel';
+  if(/\bbank\b/i.test(lower)) return 'bank';
+  return null;
+}
+
+// ================================================================
+// FALLBACK RESPONSE
+// ================================================================
+function getFallbackResponse(userMessage){
+  var raw = String(userMessage||'').trim();
+  var msg = raw.toLowerCase();
+  if(/^(hi|hello|hey|yo|hie|hei)[\s!.]*$/i.test(raw)) return "Hello 👋 Welcome to Sajvera Capital! I'm Sajvera Campaign. 😊 How can I help you today?";
+  if(/^(good\s*morning|morning)[\s!.]*$/i.test(raw)) return "Good morning! ☀️😊 Welcome to Sajvera Capital. How can I assist you today?";
+  if(/^(good\s*afternoon)[\s!.]*$/i.test(raw)) return "Good afternoon! 😊 Welcome to Sajvera Capital.";
+  if(/^(good\s*evening|evening)[\s!.]*$/i.test(raw)) return "Good evening! 🌙😊 Welcome to Sajvera Capital.";
+  if(msg.indexOf('how are you')!==-1) return "I'm doing well, thank you! 😊 I'm here and ready to help with Sajvera Capital.";
+  if(/^(thanks|thank you|thanx|thx)[\s!.]*$/i.test(raw)) return "You're most welcome! 😊 Anything else?";
+  if(msg.indexOf('who are you')!==-1 || msg.indexOf('your name')!==-1) return "I'm Sajvera Campaign 🤖 — the virtual assistant for Sajvera Capital. I can help you *invest*, *deposit*, *withdraw*, get your *referral code*, and answer questions.";
+  if(msg.indexOf('admin')!==-1 || msg.indexOf('owner')!==-1 || msg.indexOf('founder')!==-1) return "I can help with platform info, but I won't share unverified personal information. 😊\n\nFor management questions, contact Support:\n\n[EMAIL_CONTACT]";
+  if(msg.indexOf('contact')!==-1 || msg.indexOf('support')!==-1) return "You can reach the official Sajvera Capital support team by email:\n\n[EMAIL_CONTACT]\n\nPlease include your registered name and a short description. 🆘";
+  if(msg.indexOf('history')!==-1) return "The *History* page shows all your deposits, withdrawals, investments, savings, loans, bonuses and more.\n\nSubmissions via chat appear there as *Pending* until admin approves.";
+  if(msg.indexOf('treasure')!==-1) return "🎁 Treasure Hunt uses 7-character codes. Each code can only be used once. Paste it into the Treasure page to claim.";
+  if(msg.indexOf('daily')!==-1 || msg.indexOf('check')!==-1) return "📅 Daily Check-in is a 7-day reward cycle. Check in once per day; after Day 7 it restarts from Day 1.";
+  if(msg.indexOf('saving')!==-1 || msg.indexOf('save')!==-1) return "💾 Three saving branches: *Wealth*, *Reserve*, and *Growth*. Open *Saving Money* from the dashboard.";
+  if(msg.indexOf('loan')!==-1 || msg.indexOf('borrow')!==-1) return "Loans: *Sajvera Flex*, *PureOre Support*, *GoldMine Advance*. Open the *Loans* page to check eligibility.";
+  if(msg.indexOf('income')!==-1 || msg.indexOf('claim')!==-1) return "📊 The *Income* page shows your active investments and daily income. You can claim once every 24 hours on weekdays.";
+  if(msg.indexOf('news')!==-1) return "📰 The *News* page has official announcements and updates.";
+  if(msg.indexOf('voucher')!==-1) return "🎟 Vouchers are available in the *Voucher* section.";
+  if(msg.indexOf('password')!==-1) return "To change password: *Me* → *Change Password*. If forgotten, contact Support:\n\n[EMAIL_CONTACT]";
+  if(msg.indexOf('deposit')!==-1) return "I can help you deposit right here 😊 — just type *deposit* and I'll walk you through it.";
+  if(msg.indexOf('withdraw')!==-1) return "I can help you withdraw right here 😊 — just type *withdraw*.\n\n📌 A *10% fee* applies, and the window is *09:00–17:00*.";
+  if(msg.indexOf('invest')!==-1 || msg.indexOf('marketplace')!==-1 || msg.indexOf('plan')!==-1) return "I can help you find an investment 😊 — just tell me your amount, e.g. *I want to invest K100*.";
+  if(msg.indexOf('referral')!==-1 || msg.indexOf('refer')!==-1 || msg.indexOf('invite')!==-1) return "Just ask me for your *referral code* and I'll show it with your personal share link. 😊";
+  return "I'm not sure about that. 😊 Try:\n• *I want to invest K100*\n• *deposit* / *withdraw*\n• *my referral code*\n• or ask about Saving, Loans, Daily Check-in, Treasure Hunt…\n\nOr contact Support:\n\n[EMAIL_CONTACT]";
+}
+
+// ================================================================
+// FORMAT AI RESPONSE
+// ================================================================
+function buildEmailComponent(){
+  return '<div class="email-contact"><span class="email-addr">'+SUPPORT_EMAIL+'</span>'+
+    '<a href="mailto:'+SUPPORT_EMAIL+'" class="email-btn">✉️ Email</a>'+
+    '<button type="button" class="email-btn" id="copyEmailBtn">📋 Copy</button></div>';
+}
+function formatAIResponse(text){
+  var out = String(text==null?'':text);
+
+  var navGroups = [];
+  var navRe = new RegExp(NAV_OPEN+'([\\s\\S]*?)'+NAV_CLOSE,'g');
+  out = out.replace(navRe, function(m,i){ navGroups.push(i); return '@@NAV_'+(navGroups.length-1)+'@@'; });
+
+  var hasEmail = out.indexOf('[EMAIL_CONTACT]')!==-1;
+  if(hasEmail) out = out.split('[EMAIL_CONTACT]').join(EMAIL_TOKEN);
+
+  var buttons = [];
+  out = out.replace(/\[\[BTN:([^\]:]+):([^\]:]+):([^\]]+)\]\]/g, function(m,action,ev,el){
+    buttons.push({action:action,value:decodeURIComponent(ev),label:decodeURIComponent(el)});
+    return '@@BTN_'+(buttons.length-1)+'@@';
+  });
+
+  var safe = out.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  var lines = safe.split('\n');
+  var inList=false, listType=null, result=[];
+  for(var i=0;i<lines.length;i++){
+    var line = lines[i].trim();
+    var ol = line.match(/^(\d+)\.\s+(.+)/);
+    var ul = line.match(/^[-•]\s+(.+)/);
+    if(ol){
+      if(!inList||listType!=='ol'){ if(inList) result.push(listType==='ol'?'</ol>':'</ul>'); inList=true; listType='ol'; result.push('<ol>'); }
+      result.push('<li>'+ol[2]+'</li>');
+    } else if(ul){
+      if(!inList||listType!=='ul'){ if(inList) result.push(listType==='ol'?'</ol>':'</ul>'); inList=true; listType='ul'; result.push('<ul>'); }
+      result.push('<li>'+ul[1]+'</li>');
+    } else {
+      if(inList){ result.push(listType==='ol'?'</ol>':'</ul>'); inList=false; listType=null; }
+      if(line==='') result.push('<br>');
+      else if(/^─+$/.test(line)) result.push('<hr>');
+      else {
+        var f = line.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+                    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g,'$1<em>$2</em>')
+                    .replace(/`([^`\n]+)`/g,'<code>$1</code>');
+        result.push(f);
+      }
+    }
+  }
+  if(inList) result.push(listType==='ol'?'</ol>':'</ul>');
+
+  var html = result.join('<br>');
+  html = html.replace(/@@BTN_(\d+)@@/g, function(m,idx){
+    var b = buttons[parseInt(idx,10)]; if(!b) return '';
+    var cls = b.value==='confirm'?'primary':(b.value==='cancel'?'danger':'');
+    return renderChoiceBtn(b.action,b.value,b.label,cls);
+  });
+  if(hasEmail) html = html.split(EMAIL_TOKEN).join(buildEmailComponent());
+  html = html.replace(/@@NAV_(\d+)@@/g, function(m,idx){ return navGroups[parseInt(idx,10)]||''; });
+  html = html.replace(/(^|[^"'>])(https?:\/\/[^\s<]+)/g, function(m,p,url){ return p+'<a href="'+url+'" target="_blank" rel="noopener">'+url+'</a>'; });
+  html = html.replace(/(@@BTN_\d+@@)\s*<br>/g,'$1');
+  return html;
+}
+
+// ================================================================
+// RENDER
+// ================================================================
+var userIconSVG = '<svg class="msg-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+var botIconSVG = '<span class="ai-avatar msg-avatar"><span class="avatar-symbol"><svg viewBox="0 0 24 24"><polyline points="6 6 18 6 6 18 18 18"/></svg></span></span>';
+
+function displayMessage(doc){
+  var data = doc.data(); if(!data||!data.text) return;
+  var el = document.createElement('div');
+  el.className = 'message ' + (data.isUser ? 'user-message' : 'ai-message');
+  if(data.isUser) el.innerHTML = userIconSVG + '<div class="msg-content">'+escapeHtml(data.text)+'</div>';
+  else el.innerHTML = botIconSVG + '<div class="msg-content">'+formatAIResponse(data.text)+'</div>';
+  var empty = document.getElementById('emptyState'); if(empty) empty.remove();
+  chatBox.appendChild(el);
+  if(isFirstLoad){ scrollToBottomImmediate(); isFirstLoad=false; } else scrollToBottom();
+}
+function showTyping(){
+  removeTyping();
+  var d = document.createElement('div');
+  d.className = 'typing-indicator'; d.id='typingIndicator';
+  d.innerHTML = botIconSVG + ' Sajvera Campaign is typing<span class="dots"><span></span><span></span><span></span></span>';
+  chatBox.appendChild(d); scrollToBottom();
+}
+function removeTyping(){ var e=document.getElementById('typingIndicator'); if(e) e.remove(); }
+
+async function saveMessage(text, isUser){
+  if(!currentUserId) return;
+  if(!messagesRef) messagesRef = db.collection('chats').doc(currentUserId).collection('messages');
+  await messagesRef.add({ text:text, isUser:isUser, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+}
+function loadChatHistory(){
+  if(unsubscribe) unsubscribe();
+  if(!currentUserId) return;
+  messagesRef = db.collection('chats').doc(currentUserId).collection('messages');
+  var q = messagesRef.orderBy('timestamp','asc');
+  var first = true;
+  unsubscribe = q.onSnapshot(function(snap){
+    if(snap.empty && first){
+      chatBox.innerHTML = '<div class="empty-state" id="emptyState"><span class="ai-avatar empty-avatar"><span class="avatar-symbol"><svg viewBox="0 0 24 24"><polyline points="6 6 18 6 6 18 18 18"/></svg></span></span><div class="title">Sajvera Campaign</div><div class="sub">Online • 24/7 — I can help you invest, deposit, withdraw, and more</div></div>';
+      saveMessage("Hello 👋 It's me, Sajvera Campaign.\n\nI can help you with:\n• *Invest* — try: *I want to invest K100*\n• *Deposit* — try: *deposit*\n• *Withdraw* — try: *withdraw*\n• *Referral* — try: *my referral code*\n• Any platform question\n\nWhat would you like to do? 😊", false).catch(function(){});
+      first = false; return;
+    }
+    if(!snap.empty){
+      var e = document.getElementById('emptyState'); if(e) e.remove();
+      chatBox.innerHTML = '';
+      snap.forEach(function(doc){ displayMessage(doc); });
+      scrollToBottomImmediate();
+    }
+    first = false;
+  }, function(err){ console.error('chat listener', err); });
+}
+
+// ================================================================
+// SEND
+// ================================================================
+async function sendMessage(text){
+  if(!text||!text.trim()) return;
+  if(!currentUserId) return;
+  var clean = text.trim();
+  userInput.disabled = true; sendBtn.disabled = true;
+  await saveMessage(clean, true);
+  showTyping();
+  try{
+    var reply = await handleAssistantFlow(clean);
+    if(!reply || !reply.trim()) reply = getFallbackResponse(clean);
+    removeTyping();
+    await saveMessage(reply, false);
+  }catch(err){
+    console.error('send error', err);
+    removeTyping();
+    await saveMessage(getFallbackResponse(clean), false);
+  }
+  userInput.disabled = false; sendBtn.disabled = false; userInput.focus();
+}
+function handleSend(){ var t=userInput.value.trim(); if(t){ sendMessage(t); userInput.value=''; } }
+
+// ================================================================
+// BUTTONS
+// ================================================================
+chatBox.addEventListener('click', function(e){
+  var b = e.target.closest('.chat-choice-btn'); if(!b) return;
+  if(b.disabled) return;
+  var action = b.getAttribute('data-btn-action');
+  var value = b.getAttribute('data-btn-value');
+  if(!action || !value) return;
+  var label = b.textContent.trim();
+  b.disabled = true;
+  (async function(){
+    await saveMessage(label, true);
+    showTyping();
+    try{
+      var reply = await handleAssistantFlow(value);
+      if(!reply) reply = getFallbackResponse(value);
+      removeTyping();
+      await saveMessage(reply, false);
+    }catch(err){
+      console.error('button error', err);
+      removeTyping();
+      await saveMessage("⚠️ Something went wrong. Please try again.", false);
+    }
+  })();
+});
+
+// ================================================================
+// COPY EMAIL
+// ================================================================
+document.addEventListener('click', function(e){
+  var t = e.target.closest('#copyEmailBtn'); if(!t) return;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(SUPPORT_EMAIL).then(function(){
+      showToast('Email copied', false);
+      t.textContent = '✅ Copied';
+      setTimeout(function(){ t.textContent = '📋 Copy'; }, 2000);
+    }).catch(function(){ showToast('Could not copy', true); });
+  } else showToast('Copy not supported', true);
+});
+
+// ================================================================
+// BLOCK LISTENER
+// ================================================================
+function watchBlockStatus(uid){
+  if(blockUnsub) blockUnsub();
+  blockUnsub = db.collection('users').doc(uid).onSnapshot(function(doc){
+    if(doc.exists && doc.data().isBlocked===true){
+      showToast('⚠️ Account blocked. Redirecting…', true);
+      setTimeout(function(){ auth.signOut().then(function(){ window.location.href='login.html'; }); }, 2000);
+    }
+  }, function(){});
+}
+window.addEventListener('beforeunload', function(){ if(blockUnsub) blockUnsub(); });
+
+// ================================================================
+// AUTH
+// ================================================================
+var authResolved=false, redirectTimeout=null;
+auth.onAuthStateChanged(async function(user){
+  if(user){
+    authResolved=true;
+    if(redirectTimeout){ clearTimeout(redirectTimeout); redirectTimeout=null; }
+    currentUserId = user.uid;
+    watchBlockStatus(currentUserId);
+    loadDepositRulesForAssistant();
+    loadBalance();
+    loadChatHistory();
+    setTimeout(function(){ userInput.focus(); }, 600);
+  } else {
+    if(!authResolved){
+      if(!redirectTimeout) redirectTimeout = setTimeout(function(){ if(!auth.currentUser) window.location.href='login.html'; }, 2000);
+    } else window.location.href = 'login.html';
+  }
+}, function(){ window.location.href = 'login.html'; });
+
+sendBtn.addEventListener('click', handleSend);
+userInput.addEventListener('keypress', function(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); handleSend(); } });
+backBtn.addEventListener('click', function(){ window.location.href='dashboard.html'; });
+
+console.log('✨ Sajvera Campaign — natural language + invest + referral enabled');
+</script>
 </body>
 </html>
