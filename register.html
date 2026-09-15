@@ -2216,9 +2216,8 @@
                         var uid = user.uid;
                         var genRef = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-                        // NOTE: Registration bonus removed — new users start with K0.
-                        // Lucky Wheel fields (luckyWheelAvailable, luckyWheelSpun,
-                        // luckyWheelReward) are intentionally NOT set here.
+                        // New users start with K0 wallet balance.
+                        // Lucky Wheel is unlocked so they can claim their welcome bonus.
                         return db.collection('users').doc(uid).set({
                             fullName: formData.firstName + ' ' + formData.lastName,
                             firstName: formData.firstName,
@@ -2237,6 +2236,10 @@
                             isBlocked: false,
                             canRequestLoan: true,
                             referralBonusGiven: false,
+                            // --- Lucky Wheel welcome bonus flags ---
+                            luckyWheelAvailable: true,
+                            luckyWheelSpun: false,
+                            // --------------------------------------
                             heardFrom: [],
                             photoURL: null,
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -2289,10 +2292,9 @@
         // ================================================================
         setTimeout(function() { stepCountry.focus(); }, 500);
 
-        console.log('✅ Sajvera Capital · Wizard Registration (no registration bonus)');
+        console.log('✅ Sajvera Capital · Wizard Registration (Lucky Wheel welcome bonus)');
         console.log('🔗 Referral is mandatory — no referral, no account.');
-        console.log('🌍 Added Country and Currency steps at the start.');
-        console.log('📋 Step numbers and labels removed.');
+        console.log('🎁 New users unlock Lucky Wheel welcome bonus.');
     </script>
 
 </body>

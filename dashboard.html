@@ -749,6 +749,8 @@
 
         /* ================================================================
            WELCOME BONUS OVERLAY — blocks dashboard until bonus claimed
+           Scrollable so nothing gets cut off on short screens.
+           Card is centered with margin:auto (works with scrolling).
         ================================================================ */
         .wb-overlay {
             position: fixed;
@@ -758,8 +760,9 @@
                 radial-gradient(circle at 50% 0%, rgba(34, 197, 94, 0.16) 0%, rgba(34, 197, 94, 0) 55%),
                 linear-gradient(180deg, #071C12 0%, #04120B 60%, #030D08 100%);
             display: none;
-            align-items: center;
-            justify-content: center;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
             padding: 1.2rem;
             font-family: 'Inter', -apple-system, system-ui, sans-serif;
         }
@@ -771,6 +774,7 @@
         .wb-card {
             width: 100%;
             max-width: 400px;
+            margin: auto;
             background: linear-gradient(180deg, #0C2619 0%, #0B2418 55%, #08190F 100%);
             border: 1px solid rgba(212, 167, 44, 0.35);
             border-radius: 24px;
@@ -1444,6 +1448,15 @@
                         // spun === false). Once the user spins on
                         // lucky.html, those flags flip in Firestore and
                         // the overlay never appears again.
+                        //
+                        // Because the flags live on the user's Firestore
+                        // document (not in local storage), the overlay
+                        // persists across:
+                        //   • page refreshes
+                        //   • logouts and logins
+                        //   • different devices
+                        //   • closing and reopening the browser for days
+                        // Until the user actually claims, the block stays.
                         // ================================================
                         if (wbOverlay && data.luckyWheelAvailable === true && data.luckyWheelSpun === false) {
                             wbOverlay.classList.add('show');
@@ -1707,7 +1720,7 @@
             });
         });
 
-        console.log('✅ Sajvera Capital · Dashboard (with Welcome Bonus block)');
+        console.log('✅ Sajvera Capital · Dashboard (with Welcome Bonus block + scrollable overlay)');
         console.log('🎁 New users are blocked until they claim their Lucky Wheel welcome bonus.');
         console.log('🍀 Claim button → lucky.html → spin → bonus into walletBalance → back here.');
     </script>
