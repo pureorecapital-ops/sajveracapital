@@ -972,6 +972,72 @@
         auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(console.warn);
 
         // ================================================================
+        // ZAMBIA TIMEZONE HELPERS
+        //   Zambia = Africa/Lusaka = UTC+2, no DST.
+        //   All day/hour boundaries (00:00 income, 22:00 deadline) use
+        //   Zambia time, regardless of the user's browser timezone.
+        // ================================================================
+        var ZAMBIA_OFFSET_MS = 2 * 3600 * 1000;
+
+        // Days since 1970-01-01 in Zambia local time.
+        function getZambiaDayNumber(date) {
+            var utcMs = date.getTime();
+            var zambiaMs = utcMs + ZAMBIA_OFFSET_MS;
+            return Math.floor(zambiaMs / 86400000);
+        }
+
+        // 0 = Sunday, 1 = Monday, ... 6 = Saturday, in Zambia time.
+        function getZambiaDayOfWeek(date) {
+            var dayNum = getZambiaDayNumber(date);
+            return ((dayNum + 4) % 7 + 7) % 7;
+        }
+
+        // Business day = Mon..Fri in Zambia.
+        function isBusinessDayNumber(dayNum) {
+            var dow = ((dayNum + 4) % 7 + 7) % 7;
+            return dow >= 1 && dow <= 5;
+        }
+
+        // Next business day strictly after the given Zambia day number.
+        function nextBusinessDayNumber(dayNum) {
+            var d = dayNum + 1;
+            while (!isBusinessDayNumber(d)) d++;
+            return d;
+        }
+
+        // Zambia midnight (00:00) of a Zambia day number → UTC ms.
+        function dayNumberToUtcMs(dayNum) {
+            return dayNum * 86400000 - ZAMBIA_OFFSET_MS;
+        }
+
+        function getZambiaHour(date) {
+            var utcMs = date.getTime();
+            var zambiaMs = utcMs + ZAMBIA_OFFSET_MS;
+            return Math.floor((((zambiaMs % 86400000) + 86400000) % 86400000) / 3600000);
+        }
+
+        function getZambiaMinute(date) {
+            var utcMs = date.getTime();
+            var zambiaMs = utcMs + ZAMBIA_OFFSET_MS;
+            return Math.floor((((zambiaMs % 3600000) + 3600000) % 3600000) / 60000);
+        }
+
+        function isWeekend(date) {
+            var dow = getZambiaDayOfWeek(date);
+            return dow === 0 || dow === 6;
+        }
+
+        // Zambia-aware "add N business days" → returns a Date at Zambia 00:00.
+        function addBusinessDays(startDate, numDays) {
+            var startDay = getZambiaDayNumber(startDate);
+            var d = startDay;
+            for (var i = 0; i < numDays; i++) {
+                d = nextBusinessDayNumber(d);
+            }
+            return new Date(dayNumberToUtcMs(d));
+        }
+
+        // ================================================================
         // HELPERS
         // ================================================================
         function formatMoney(amount) {
@@ -988,22 +1054,6 @@
             setTimeout(function() { if (toast.parentNode) toast.remove(); }, 4000);
         }
 
-        function isWeekend(date) {
-            var day = date.getDay();
-            return day === 0 || day === 6;
-        }
-
-        function addBusinessDays(startDate, numDays) {
-            var result = new Date(startDate);
-            result.setHours(0, 0, 0, 0); // ensure midnight
-            var added = 0;
-            while (added < numDays) {
-                result.setDate(result.getDate() + 1);
-                if (!isWeekend(result)) added++;
-            }
-            return result;
-        }
-
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/[&<>]/g, function(m) {
@@ -1014,13 +1064,26 @@
             });
         }
 
+        // Formats a Date (UTC from Firestore) as Zambia local time string.
         function formatDateWithTime(date) {
-            var options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            return date.toLocaleDateString('en-US', options);
+            if (!date) return '—';
+            var utcMs = date.getTime();
+            var z = new Date(utcMs + ZAMBIA_OFFSET_MS);
+            var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            var dow = z.getUTCDay();
+            var mon = z.getUTCMonth();
+            var day = z.getUTCDate();
+            var h = z.getUTCHours();
+            var m = z.getUTCMinutes();
+            var ampm = h >= 12 ? 'PM' : 'AM';
+            var h12 = h % 12 || 12;
+            return days[dow] + ', ' + months[mon] + ' ' + day + ', ' +
+                   (h12 < 10 ? '0' : '') + h12 + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm + ' (CAT)';
         }
 
         // ================================================================
-        // IMAGE HELPER
+        // IMAGE HELPER (unchanged)
         // ================================================================
         function getSafeImageUrl(url) {
             if (!url || typeof url !== 'string' || url.trim() === '') {
@@ -1078,7 +1141,7 @@
         });
 
         // ================================================================
-        // BLOCK LISTENER
+        // BLOCK LISTENER (unchanged)
         // ================================================================
         function watchBlockStatus(userId) {
             if (userBlockListener) userBlockListener();
@@ -1094,7 +1157,7 @@
         }
 
         // ================================================================
-        // AUTH STATE
+        // AUTH STATE (unchanged)
         // ================================================================
         let authResolved = false;
         let redirectTimeout = null;
@@ -1145,7 +1208,7 @@
         });
 
         // ================================================================
-        // FETCH PLAN IMAGE
+        // FETCH PLAN IMAGE (unchanged)
         // ================================================================
         async function fetchPlanImage(planName) {
             if (planImageCache[planName]) return planImageCache[planName];
@@ -1170,151 +1233,186 @@
         }
 
         // ================================================================
-        // FIXED: GET LAST COMPLETED BUSINESS DAY INDEX
+        // NORMALIZE lastClaimed from Firestore into a JS Date (UTC ms).
         // ================================================================
-        function getLastCompletedBusinessDayIndex(startDate, now, totalBusinessDays) {
-            if (totalBusinessDays <= 0) return 0;
-            var completed = 0;
-            var current = new Date(startDate);
-            current.setHours(0, 0, 0, 0);
-            for (var i = 1; i <= totalBusinessDays; i++) {
-                var dueDate = addBusinessDays(startDate, i);
-                dueDate.setHours(0, 0, 0, 0);
-                var windowEnd = new Date(dueDate);
-                if (dueDate.getDay() === 5) { // Friday
-                    windowEnd.setDate(dueDate.getDate() + 1);
-                    windowEnd.setHours(23, 59, 59, 999);
-                } else {
-                    windowEnd.setHours(23, 59, 59, 999);
-                }
-                if (now > windowEnd) {
-                    completed = i;
-                } else {
-                    break;
-                }
-            }
-            return Math.min(completed, totalBusinessDays);
+        function lastClaimedToDate(lastClaimed) {
+            if (!lastClaimed) return null;
+            if (typeof lastClaimed.toDate === 'function') return lastClaimed.toDate();
+            if (lastClaimed instanceof Date) return lastClaimed;
+            if (typeof lastClaimed === 'number') return new Date(lastClaimed);
+            return null;
         }
 
         // ================================================================
-        // FIXED: SYNC MISSED CLAIMS
+        // INCOME STATUS — the single source of truth for claim eligibility.
+        //
+        // Rules implemented:
+        //   • Income becomes available at Zambia 00:00 on each business day.
+        //   • Deadline is Zambia 22:00 the SAME day. After that the slot is LOST.
+        //   • No weekend income. No carryover. No missed-day sync.
+        //   • Weekend purchases wait for the first business day.
+        //   • claimable ONLY if: today is a business day,
+        //                       today is within [firstIncomeDay, lastIncomeDay],
+        //                       before 22:00 Zambia,
+        //                       today's slot has not already been claimed.
         // ================================================================
-        async function syncMissedClaims(plan) {
+        function getClaimStatus(plan, now) {
             var startDate = plan.startDate;
             if (!(startDate instanceof Date)) {
-                startDate = startDate.toDate ? startDate.toDate() : new Date(startDate);
+                startDate = startDate && startDate.toDate ? startDate.toDate() : new Date(startDate);
             }
             var totalBusinessDays = plan.businessDays || plan.days || 0;
-            var now = new Date();
             var claimsCount = plan.claimsCount || 0;
+            var dailyAmount = plan.dailyReturn || plan.dailyAmount || 0;
+            var lastClaimedDate = lastClaimedToDate(plan.lastClaimed);
 
-            var completed = getLastCompletedBusinessDayIndex(startDate, now, totalBusinessDays);
-            if (claimsCount < completed) {
+            var nowDay = getZambiaDayNumber(now);
+            var startDay = getZambiaDayNumber(startDate);
+            var todayDow = getZambiaDayOfWeek(now);
+            var todayIsBusiness = todayDow >= 1 && todayDow <= 5;
+            var zambiaHour = getZambiaHour(now);
+            var zambiaMinute = getZambiaMinute(now);
+            var beforeDeadline = zambiaHour < 22;
+
+            var firstIncomeDay = nextBusinessDayNumber(startDay);
+
+            // Last income day = the Nth business day strictly after startDay.
+            var lastIncomeDay = startDay;
+            for (var i = 0; i < totalBusinessDays; i++) {
+                lastIncomeDay = nextBusinessDayNumber(lastIncomeDay);
+            }
+
+            var daysRemaining = Math.max(0, totalBusinessDays - claimsCount);
+
+            // Plan done: all claims made, OR all slots have passed.
+            if (claimsCount >= totalBusinessDays || nowDay > lastIncomeDay) {
+                return {
+                    available: false,
+                    nextClaimTime: null,
+                    dailyAmount: dailyAmount,
+                    earnedSoFar: 0,
+                    progress: 100,
+                    daysRemaining: 0,
+                    status: 'done',
+                    isSunday: false
+                };
+            }
+
+            // Not yet first income day (early purchase or weekend purchase).
+            if (nowDay < firstIncomeDay) {
+                return {
+                    available: false,
+                    nextClaimTime: new Date(dayNumberToUtcMs(firstIncomeDay)),
+                    dailyAmount: dailyAmount,
+                    earnedSoFar: 0,
+                    progress: 0,
+                    daysRemaining: daysRemaining,
+                    status: 'waiting',
+                    isSunday: todayDow === 0
+                };
+            }
+
+            // Weekend — no income today.
+            if (!todayIsBusiness) {
+                var nextBD = nextBusinessDayNumber(nowDay);
+                return {
+                    available: false,
+                    nextClaimTime: new Date(dayNumberToUtcMs(nextBD)),
+                    dailyAmount: dailyAmount,
+                    earnedSoFar: 0,
+                    progress: 0,
+                    daysRemaining: daysRemaining,
+                    status: 'weekend',
+                    isSunday: todayDow === 0
+                };
+            }
+
+            // Today already claimed?
+            var lastClaimedDay = lastClaimedDate ? getZambiaDayNumber(lastClaimedDate) : null;
+            if (lastClaimedDay === nowDay) {
+                var nextBD2 = nextBusinessDayNumber(nowDay);
+                return {
+                    available: false,
+                    nextClaimTime: new Date(dayNumberToUtcMs(nextBD2)),
+                    dailyAmount: dailyAmount,
+                    earnedSoFar: 0,
+                    progress: 100,
+                    daysRemaining: daysRemaining,
+                    status: 'claimed_today',
+                    isSunday: false
+                };
+            }
+
+            // Past Zambia 22:00 deadline — today's slot is LOST.
+            if (!beforeDeadline) {
+                var nextBD3 = nextBusinessDayNumber(nowDay);
+                return {
+                    available: false,
+                    nextClaimTime: new Date(dayNumberToUtcMs(nextBD3)),
+                    dailyAmount: dailyAmount,
+                    earnedSoFar: 0,
+                    progress: 0,
+                    daysRemaining: daysRemaining,
+                    status: 'missed',
+                    isSunday: false
+                };
+            }
+
+            // AVAILABLE NOW.
+            var hoursElapsed = zambiaHour + (zambiaMinute / 60);
+            var earnedSoFar = Math.min(dailyAmount, dailyAmount * (hoursElapsed / 22));
+            var progress = Math.min(100, (hoursElapsed / 22) * 100);
+
+            return {
+                available: true,
+                nextClaimTime: null,
+                dailyAmount: dailyAmount,
+                earnedSoFar: earnedSoFar,
+                progress: progress,
+                daysRemaining: daysRemaining,
+                status: 'ready',
+                isSunday: false
+            };
+        }
+
+        // ================================================================
+        // MARK EXHAUSTED PLANS as completed.
+        //   No missed-claim syncing (that rule was removed).
+        //   A plan completes only when all slots have passed
+        //   OR claimsCount reaches totalBusinessDays.
+        // ================================================================
+        async function markExhaustedPlans(plan) {
+            var startDate = plan.startDate;
+            if (!(startDate instanceof Date)) {
+                startDate = startDate && startDate.toDate ? startDate.toDate() : new Date(startDate);
+            }
+            var totalBusinessDays = plan.businessDays || plan.days || 0;
+            var claimsCount = plan.claimsCount || 0;
+            var nowDay = getZambiaDayNumber(new Date());
+            var startDay = getZambiaDayNumber(startDate);
+
+            var lastIncomeDay = startDay;
+            for (var i = 0; i < totalBusinessDays; i++) {
+                lastIncomeDay = nextBusinessDayNumber(lastIncomeDay);
+            }
+
+            var exhausted = (nowDay > lastIncomeDay) || (claimsCount >= totalBusinessDays);
+            if (exhausted && plan.status === 'active') {
                 try {
                     await db.collection('investments').doc(plan.id).update({
-                        claimsCount: completed,
-                        lastClaimed: firebase.firestore.FieldValue.serverTimestamp()
+                        status: 'completed',
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    plan.claimsCount = completed;
-                    console.log(`Synced missed claims for plan ${plan.id}: claimsCount now ${completed}`);
+                    plan.status = 'completed';
                 } catch (err) {
-                    console.warn('Failed to sync missed claims:', err);
-                }
-            }
-            if (claimsCount >= totalBusinessDays) {
-                if (plan.status === 'active') {
-                    try {
-                        await db.collection('investments').doc(plan.id).update({
-                            status: 'completed',
-                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        plan.status = 'completed';
-                    } catch (err) {
-                        console.warn('Failed to mark plan as completed:', err);
-                    }
+                    console.warn('Failed to mark plan as completed:', err);
                 }
             }
             return plan;
         }
 
         // ================================================================
-        // FIXED: GET CLAIM STATUS – properly calculates next claim midnight
-        // ================================================================
-        function getClaimStatus(inv, now) {
-            var start = inv.startDate;
-            var claimsCount = inv.claimsCount || 0;
-            var dailyAmount = inv.dailyAmount;
-            var totalBusinessDays = inv.businessDays;
-
-            if (claimsCount >= totalBusinessDays) {
-                return {
-                    available: false,
-                    nextClaimTime: null,
-                    windowEnd: null,
-                    dailyAmount: dailyAmount,
-                    earnedSoFar: 0,
-                    hoursSince: 0,
-                    progress: 100,
-                    index: -1,
-                    status: 'done',
-                    daysRemaining: 0
-                };
-            }
-
-            var nextIndex = claimsCount + 1;
-            var dueDate = addBusinessDays(start, nextIndex);
-            var claimStart = new Date(dueDate);
-            claimStart.setHours(0, 0, 0, 0);
-
-            var windowEnd = new Date(dueDate);
-            if (dueDate.getDay() === 5) {
-                windowEnd.setDate(dueDate.getDate() + 1);
-                windowEnd.setHours(23, 59, 59, 999);
-            } else {
-                windowEnd.setHours(23, 59, 59, 999);
-            }
-
-            var isSunday = now.getDay() === 0;
-            var inWindow = (now >= claimStart && now <= windowEnd);
-            var available = inWindow && !isSunday;
-
-            var hoursSince = 0;
-            var earnedSoFar = 0;
-            var progress = 0;
-            if (inWindow) {
-                hoursSince = Math.max(0, (now - claimStart) / (1000 * 60 * 60));
-                earnedSoFar = Math.min(dailyAmount, dailyAmount * (hoursSince / 24));
-                progress = Math.min(100, (hoursSince / 24) * 100);
-            }
-
-            var daysRemaining = totalBusinessDays - claimsCount;
-
-            var statusText = '';
-            if (available) statusText = 'ready';
-            else if (isSunday) statusText = 'weekend';
-            else if (now < claimStart) statusText = 'waiting';
-            else if (now > windowEnd) statusText = 'missed';
-
-            // Debug: log the next claim time
-            console.log('Next claim time:', claimStart.toISOString(), 'Current time:', now.toISOString());
-
-            return {
-                available: available,
-                nextClaimTime: claimStart,
-                windowEnd: windowEnd,
-                dailyAmount: dailyAmount,
-                earnedSoFar: earnedSoFar,
-                hoursSince: hoursSince,
-                progress: progress,
-                index: nextIndex,
-                status: statusText,
-                daysRemaining: daysRemaining,
-                isSunday: isSunday
-            };
-        }
-
-        // ================================================================
-        // LOAD ALL PLANS – correctly tag invest vs buy
+        // LOAD ALL PLANS
         // ================================================================
         async function loadAllPlans() {
             if (!currentUserId) return;
@@ -1335,7 +1433,7 @@
 
                 for (var plan of investPlans) {
                     if (plan.status === 'active') {
-                        await syncMissedClaims(plan);
+                        await markExhaustedPlans(plan);
                     }
                 }
 
@@ -1353,10 +1451,8 @@
 
                 var allPlans = [...investPlans, ...buyPlans];
                 allPlans.sort(function(a, b) {
-                    var aTime = (a.startDate || a.purchasedAt)?.toMillis ? (a.startDate || a.purchasedAt).toMillis() :
-                        0;
-                    var bTime = (b.startDate || b.purchasedAt)?.toMillis ? (b.startDate || b.purchasedAt).toMillis() :
-                        0;
+                    var aTime = (a.startDate || a.purchasedAt)?.toMillis ? (a.startDate || a.purchasedAt).toMillis() : 0;
+                    var bTime = (b.startDate || b.purchasedAt)?.toMillis ? (b.startDate || b.purchasedAt).toMillis() : 0;
                     return bTime - aTime;
                 });
 
@@ -1369,11 +1465,25 @@
                     if (plan.planType === 'invest') {
                         var startDate = plan.startDate;
                         var businessDays = plan.businessDays || plan.days;
-                        var endDate = plan.businessEndDate ? plan.businessEndDate : addBusinessDays(startDate,
-                            businessDays);
+                        var endDate = plan.businessEndDate
+                            ? plan.businessEndDate
+                            : addBusinessDays(startDate, businessDays);
                         var today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        var isExpired = plan.status !== 'active' || today > endDate;
+                        var isExpired = plan.status !== 'active' && plan.status !== undefined
+                            ? plan.status !== 'active'
+                            : false;
+                        // Use same rule as getClaimStatus: expired when nowDay > lastIncomeDay OR claimsCount >= totalBusinessDays
+                        var nowDay = getZambiaDayNumber(now);
+                        var startDay = getZambiaDayNumber(startDate);
+                        var lastIncomeDay = startDay;
+                        for (var k = 0; k < businessDays; k++) {
+                            lastIncomeDay = nextBusinessDayNumber(lastIncomeDay);
+                        }
+                        var slotExhausted = nowDay > lastIncomeDay;
+                        var allClaimed = (plan.claimsCount || 0) >= businessDays;
+                        if (plan.status === 'completed' || slotExhausted || allClaimed) {
+                            isExpired = true;
+                        }
 
                         var investment = {
                             id: plan.id,
@@ -1383,7 +1493,7 @@
                             endDate: endDate,
                             dailyAmount: plan.dailyReturn,
                             claimsCount: plan.claimsCount || 0,
-                            lastClaimed: plan.lastClaimed,
+                            lastClaimed: plan.lastClaimed || null,
                             purchasedOnWeekend: plan.purchasedOnWeekend || false,
                             planType: 'invest',
                             claimable: true
@@ -1395,8 +1505,7 @@
                         }
                     } else {
                         var expiryDate = plan.expiresAt ? plan.expiresAt.toDate() : null;
-                        var isExpiredBuy = plan.status === 'claimed' || plan.status === 'expired' || (expiryDate && now >
-                            expiryDate);
+                        var isExpiredBuy = plan.status === 'claimed' || plan.status === 'expired' || (expiryDate && now > expiryDate);
                         var buyPlan = {
                             id: plan.id,
                             ...plan,
@@ -1463,31 +1572,42 @@
                     var countdownText = '';
                     if (canClaim) {
                         statusText = '✅ Ready to claim';
-                    } else if (status.isSunday) {
-                        statusText = '⏳ Sunday – no claims';
-                        var nextMonday = new Date(now);
-                        nextMonday.setDate(now.getDate() + ((8 - now.getDay()) % 7));
-                        nextMonday.setHours(0, 0, 0, 0);
-                        var diffMs = nextMonday - now;
-                        if (diffMs > 0) {
-                            var hrs = Math.floor(diffMs / (1000 * 60 * 60));
-                            var mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                            countdownText = hrs + 'h ' + mins + 'm';
+                    } else if (status.status === 'claimed_today') {
+                        statusText = '✅ Claimed today';
+                    } else if (status.status === 'weekend') {
+                        statusText = '⏳ Weekend – no income';
+                        if (status.nextClaimTime) {
+                            var diffW = status.nextClaimTime.getTime() - now.getTime();
+                            if (diffW > 0) {
+                                var hrsW = Math.floor(diffW / (1000 * 60 * 60));
+                                var minsW = Math.floor((diffW % (1000 * 60 * 60)) / (1000 * 60));
+                                countdownText = hrsW + 'h ' + minsW + 'm';
+                            }
                         }
                     } else if (status.status === 'waiting') {
-                        var diff = status.nextClaimTime - now;
-                        if (diff > 0) {
-                            var hrs = Math.floor(diff / (1000 * 60 * 60));
-                            var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                            countdownText = hrs + 'h ' + mins + 'm';
-                            statusText = '⏳ Next claim in';
-                        } else {
-                            statusText = '⏳ Processing...';
+                        if (status.nextClaimTime) {
+                            var diff = status.nextClaimTime.getTime() - now.getTime();
+                            if (diff > 0) {
+                                var hrs = Math.floor(diff / (1000 * 60 * 60));
+                                var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                countdownText = hrs + 'h ' + mins + 'm';
+                                statusText = '⏳ Next income in';
+                            } else {
+                                statusText = '⏳ Processing...';
+                            }
+                        }
+                    } else if (status.status === 'missed') {
+                        statusText = '⚠️ Missed – income lost';
+                        if (status.nextClaimTime) {
+                            var diffM = status.nextClaimTime.getTime() - now.getTime();
+                            if (diffM > 0) {
+                                var hrsM = Math.floor(diffM / (1000 * 60 * 60));
+                                var minsM = Math.floor((diffM % (1000 * 60 * 60)) / (1000 * 60));
+                                countdownText = 'Next: ' + hrsM + 'h ' + minsM + 'm';
+                            }
                         }
                     } else if (status.status === 'done') {
                         statusText = '✅ All claims completed';
-                    } else if (status.status === 'missed') {
-                        statusText = '⏳ Missed – will sync automatically';
                     } else {
                         statusText = '⏳ Waiting...';
                     }
@@ -1498,20 +1618,17 @@
 
                     var startDateFormatted = formatDateWithTime(plan.startDate);
 
-                    var isWeekendPurchase = plan.purchasedOnWeekend === true;
-                    if (!isWeekendPurchase && plan.claimsCount === 0 && plan.startDate.getDay() === 1) {
-                        var daysSinceStart = Math.floor((now - plan.startDate) / (1000 * 60 * 60 * 24));
-                        if (daysSinceStart <= 3) {
-                            isWeekendPurchase = true;
-                        }
-                    }
+                    // Weekend purchase detection (proper Zambia day-of-week)
+                    var startDow = getZambiaDayOfWeek(plan.startDate);
+                    var isWeekendPurchase = plan.purchasedOnWeekend === true ||
+                                            startDow === 0 || startDow === 6;
 
                     var weekendNoteHtml = '';
-                    if (isWeekendPurchase && plan.claimsCount === 0) {
+                    if (isWeekendPurchase && claimsCount === 0) {
                         weekendNoteHtml = `
                             <div class="weekend-purchase-note">
                                 <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                📅 Weekend purchase – first claim available from the next business day at 00:00
+                                📅 Weekend purchase – first income available at 00:00 the next business day
                             </div>
                         `;
                     }
@@ -1539,8 +1656,8 @@
                                         <div class="progress-fill" style="width: ${Math.min(progress, 100)}%;"></div>
                                     </div>
                                     <div class="progress-label">
-                                        <span class="earned">Earned: ${formatMoney(earnedDisplay)}</span>
-                                        <span>Daily target: ${formatMoney(dailyDisplay)}</span>
+                                        <span class="earned">Window: 00:00 – 22:00 (CAT)</span>
+                                        <span>Daily: ${formatMoney(dailyDisplay)}</span>
                                     </div>
                                 </div>
                                 <div class="claim-action">
@@ -1550,15 +1667,15 @@
                                         ${canClaim ? '<span class="ready-text">● Ready</span>' : ''}
                                     </div>
                                     <button class="claim-btn ${canClaim ? 'active' : ''}" ${canClaim ? '' : 'disabled'} data-id="${plan.id}" data-daily="${dailyDisplay}">
-                                        ${canClaim ? '💰 Claim' : (status.isSunday ? '⏳ Sunday' : '⏳ Wait')}
+                                        ${canClaim ? '💰 Claim' : (status.status === 'missed' ? '⛔ Missed' : status.status === 'claimed_today' ? '✅ Claimed' : status.status === 'weekend' ? '⏳ Weekend' : '⏳ Wait')}
                                     </button>
                                 </div>
-                                ${status.isSunday ? '<div class="weekend-note">⛔ No claims on Sunday – resumes Monday at 00:00</div>' : ''}
+                                ${status.status === 'missed' ? '<div class="weekend-note">⚠️ Claim window closed at 22:00 CAT – today\'s income is lost</div>' : ''}
                             </div>
                         </div>
                     `;
                 } else {
-                    // Buy plan
+                    // Buy plan (unchanged)
                     var expiryDate = plan.expiryDate;
                     var isExpired = plan.status === 'claimed' || (expiryDate && now > expiryDate);
                     var isReady = !isExpired && expiryDate && now >= expiryDate && plan.status !== 'claimed';
@@ -1763,27 +1880,42 @@
 
         // ================================================================
         // CLAIM DAILY INCOME (Invest)
+        //   Atomic transaction:
+        //     • re-check eligibility INSIDE the transaction using fresh data
+        //     • verify today is a business day, before 22:00 Zambia,
+        //       and that today's slot has not already been claimed
+        //     • increment walletBalance (only walletBalance)
+        //     • increment claimsCount
+        //     • set lastClaimed to serverTimestamp (client clock irrelevant)
+        //     • write a transactions record
         // ================================================================
         async function claimDailyIncome(investmentId, dailyAmount, refreshAfter, btnElement) {
             var user = auth.currentUser;
             if (!user) return false;
-            var now = new Date();
 
             try {
+                var claimedAmount = 0;
+
                 await db.runTransaction(async function(transaction) {
                     var invRef = db.collection('investments').doc(investmentId);
                     var invSnap = await transaction.get(invRef);
                     if (!invSnap.exists) throw new Error('Investment not found');
                     var invData = invSnap.data();
+
                     var start = invData.startDate.toDate();
                     var claimsCount = invData.claimsCount || 0;
                     var totalBusinessDays = invData.businessDays || invData.days;
+                    var planDailyAmount = invData.dailyReturn || invData.dailyAmount || dailyAmount;
 
+                    // Server-authoritative time reference: use client `now` for
+                    // pre-check, but the plan doc + lastClaimed read is fresh.
+                    var now = new Date();
                     var status = getClaimStatus({
                         startDate: start,
                         claimsCount: claimsCount,
-                        dailyAmount: dailyAmount,
+                        dailyAmount: planDailyAmount,
                         businessDays: totalBusinessDays,
+                        lastClaimed: invData.lastClaimed
                     }, now);
 
                     if (!status.available) {
@@ -1791,34 +1923,39 @@
                     }
 
                     var userRef = db.collection('users').doc(user.uid);
-
                     transaction.update(userRef, {
-                        walletBalance: firebase.firestore.FieldValue.increment(dailyAmount)
+                        walletBalance: firebase.firestore.FieldValue.increment(planDailyAmount)
                     });
 
                     transaction.update(invRef, {
                         claimsCount: firebase.firestore.FieldValue.increment(1),
-                        lastClaimed: firebase.firestore.Timestamp.fromDate(now)
+                        lastClaimed: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
                     var txRef = db.collection('transactions').doc();
                     transaction.set(txRef, {
                         userId: user.uid,
                         type: 'daily_income',
-                        amount: dailyAmount,
+                        amount: planDailyAmount,
                         description: 'Daily income from ' + invData.planName,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
+
+                    claimedAmount = planDailyAmount;
                 });
 
-                showToast('✅ ' + formatMoney(dailyAmount) + ' claimed!', false);
+                showToast('✅ ' + formatMoney(claimedAmount) + ' claimed!', false);
                 if (refreshAfter) {
                     await loadAllPlans();
                 }
                 return true;
             } catch (err) {
                 console.error("Invest claim error:", err);
-                showToast(err.message || 'Claim failed', true);
+                var msg = err.message || 'Claim failed';
+                if (msg.indexOf('not available') !== -1) {
+                    msg = 'Claim window closed. Income is available 00:00–22:00 (CAT).';
+                }
+                showToast(msg, true);
                 if (btnElement) btnElement.disabled = false;
                 return false;
             }
@@ -1866,6 +2003,8 @@
                 }
                 console.log("Pre-flight OK.");
 
+                var finalAmountGlobal = 0;
+
                 await db.runTransaction(async function(transaction) {
                     const purchaseRef = db.collection('marketplacePurchases').doc(purchaseId);
                     const purchaseSnap = await transaction.get(purchaseRef);
@@ -1880,6 +2019,7 @@
                     const amount = purchaseData.amount || 0;
                     const totalIncome = purchaseData.totalIncome || 0;
                     const finalAmount = amount + totalIncome;
+                    finalAmountGlobal = finalAmount;
 
                     const userRef = db.collection('users').doc(uid);
                     transaction.update(userRef, {
@@ -1903,7 +2043,7 @@
                 });
 
                 console.log("✅ BUY CLAIM SUCCESS");
-                showToast('✅ ' + formatMoney(finalAmount) + ' claimed!', false);
+                showToast('✅ ' + formatMoney(finalAmountGlobal) + ' claimed!', false);
                 if (btnElement) btnElement.disabled = true;
                 await loadAllPlans();
             } catch (err) {
@@ -2022,8 +2162,7 @@
             });
         });
 
-        console.log('✅ Countdown fixed – next claim time now correctly computed.');
-        console.log('✅ Open your browser console to see the actual next claim time for debugging.');
+        console.log('✅ Income rules updated: 00:00 availability, 22:00 deadline, no carryover, Zambia timezone.');
     </script>
 
 </body>

@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<meta name="theme-color" content="#071C12">
+<title>Lucky Wheel – Sajvera Capital</title>
+
+<link rel="preconnect" href="https://www.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+<style>
+:root {
+  --dark-green:   #071C12;
+  --deep-green:   #04120B;
+  --card-green:   #0B2418;
+  --bright-green: #22C55E;
+  --dark-green2:  #16A34A;
+  --gold:         #D4A72C;
+  --light-gold:   #F0C94A;
+  --cream:        #F7F4E9;
+  --white:        #FFFFFF;
+  --muted:        rgba(247,244,233,0.60);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  color: var(--cream);
+  min-height: 100vh;
+  padding-bottom: 2.5rem;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(34,197,94,0.14) 0%, rgba(34,197,94,0) 42%),
+    radial-gradient(circle at 50% 105%, rgba(212,167,44,0.06) 0%, rgba(212,167,44,0) 45%),
+    linear-gradient(180deg, var(--dark-green) 0%, var(--deep-green) 60%, #030D08 100%);
+  background-attachment: scroll;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid rgba(212,167,44,0.10);
+  background: rgba(4,18,11,0.55);
+}
+.logo-text {
+  font-size: 1.18rem; font-weight: 800; color: var(--cream);
+  text-decoration: none; letter-spacing: -0.4px;
+}
+.logo-text .accent { color: var(--gold); }
+.header-back {
+  font-size: 0.78rem; font-weight: 700; color: rgba(247,244,233,0.72);
+  text-decoration: none; padding: 6px 13px; border-radius: 20px;
+  background: rgba(11,36,24,0.85);
+  border: 1px solid rgba(212,167,44,0.22);
+  transition: background 0.15s, border-color 0.15s;
+}
+.header-back:active {
+  background: rgba(22,163,74,0.22);
+  border-color: rgba(34,197,94,0.4);
+  color: var(--white);
+}
+
+.page { width: 100%; max-width: 460px; margin: 0 auto; padding: 1.1rem 0.9rem 0; }
+
+.card {
+  position: relative;
+  background: linear-gradient(180deg, #0C2619 0%, #0B2418 55%, #08190F 100%);
+  border: 1px solid rgba(212,167,44,0.22);
+  border-radius: 24px;
+  padding: 1.7rem 1.15rem 1.8rem;
+  box-shadow:
+    0 1px 0 rgba(212,167,44,0.10) inset,
+    0 22px 55px rgba(0,0,0,0.55),
+    0 0 42px rgba(34,197,94,0.06);
+  overflow: hidden;
+}
+.card::before, .card::after {
+  content: ""; position: absolute; border-radius: 50%; pointer-events: none;
+}
+.card::before {
+  top: -70px; right: -70px; width: 190px; height: 190px;
+  background: radial-gradient(circle, rgba(34,197,94,0.18) 0%, rgba(34,197,94,0) 70%);
+}
+.card::after {
+  bottom: -80px; left: -80px; width: 220px; height: 220px;
+  background: radial-gradient(circle, rgba(212,167,44,0.10) 0%, rgba(212,167,44,0) 70%);
+}
+
+.state { position: relative; z-index: 1; text-align: center; }
+
+.clover {
+  font-size: 1.9rem; line-height: 1; margin-bottom: 0.35rem;
+  filter: drop-shadow(0 0 10px rgba(34,197,94,0.35));
+}
+.title-main {
+  font-size: 1.55rem; font-weight: 900; letter-spacing: 1.6px;
+  color: var(--cream);
+  text-shadow: 0 0 22px rgba(34,197,94,0.18);
+  margin-bottom: 0.35rem;
+}
+.title-gold {
+  font-size: 0.95rem; font-weight: 700; color: var(--gold);
+  letter-spacing: 0.3px; margin-bottom: 0.4rem;
+}
+.title-desc {
+  font-size: 0.82rem; font-weight: 500; color: var(--muted);
+  line-height: 1.5; max-width: 300px; margin: 0 auto 1.15rem;
+}
+
+.loader {
+  width: 46px; height: 46px; margin: 0.6rem auto 0.9rem;
+  border-radius: 50%;
+  border: 3px solid rgba(34,197,94,0.15);
+  border-top-color: var(--bright-green);
+  border-right-color: rgba(212,167,44,0.55);
+  animation: spin 0.9s linear infinite;
+  box-shadow: 0 0 18px rgba(34,197,94,0.18);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.wheel-stage {
+  position: relative;
+  width: 100%; max-width: 318px;
+  margin: 0.2rem auto 0;
+  padding-bottom: 100%; height: 0;
+}
+.wheel-pointer {
+  position: absolute; top: -14px; left: 50%; margin-left: -15px;
+  width: 0; height: 0;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-top: 27px solid var(--gold);
+  z-index: 9;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.55)) drop-shadow(0 0 8px rgba(212,167,44,0.45));
+}
+.wheel-pointer::after {
+  content: ""; position: absolute; top: -30px; left: -8px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--light-gold) 0%, var(--gold) 55%, #8a6c14 100%);
+  box-shadow: 0 0 10px rgba(212,167,44,0.55);
+}
+.wheel-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #0B2418 0%, #04120B 70%);
+  box-shadow:
+    0 0 0 6px #0a1a11 inset,
+    0 0 0 12px var(--gold),
+    0 0 0 13px #7a5f10,
+    0 0 26px rgba(212,167,44,0.35),
+    0 0 60px rgba(34,197,94,0.12),
+    0 18px 40px rgba(0,0,0,0.55);
+  z-index: 1;
+}
+.wheel-rotor {
+  position: absolute; inset: 8px;
+  transform: rotate(0deg);
+  -webkit-transform: rotate(0deg);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  z-index: 2;
+}
+.wheel-rotor svg { display: block; width: 100%; height: 100%; }
+
+.spin-btn {
+  position: absolute; left: 50%; top: 50%;
+  width: 86px; height: 86px; margin: -43px 0 0 -43px;
+  border-radius: 50%;
+  border: 3px solid var(--gold);
+  background: radial-gradient(circle at 50% 28%, #2FE273 0%, var(--bright-green) 42%, var(--dark-green2) 100%);
+  color: var(--deep-green);
+  font-family: inherit; font-size: 0.95rem; font-weight: 900;
+  letter-spacing: 1.4px; cursor: pointer; z-index: 8;
+  box-shadow:
+    0 0 0 5px rgba(4,18,11,0.85),
+    0 0 22px rgba(34,197,94,0.55),
+    0 0 44px rgba(34,197,94,0.22),
+    inset 0 -4px 0 rgba(0,0,0,0.22),
+    inset 0 3px 0 rgba(255,255,255,0.20);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.spin-btn:active:not(:disabled) {
+  transform: scale(0.94);
+  box-shadow:
+    0 0 0 5px rgba(4,18,11,0.85),
+    0 0 16px rgba(34,197,94,0.55),
+    inset 0 -2px 0 rgba(0,0,0,0.22);
+}
+.spin-btn:disabled {
+  cursor: default;
+  background: radial-gradient(circle at 50% 30%, #1a4d2f 0%, #0f3a22 55%, #0a2818 100%);
+  color: rgba(247,244,233,0.55);
+  border-color: rgba(212,167,44,0.45);
+  box-shadow:
+    0 0 0 5px rgba(4,18,11,0.85),
+    0 0 14px rgba(34,197,94,0.18),
+    inset 0 -3px 0 rgba(0,0,0,0.25);
+  font-size: 0.72rem; letter-spacing: 0.6px;
+}
+
+.hint {
+  margin-top: 1.05rem; font-size: 0.8rem; font-weight: 600;
+  color: var(--muted); line-height: 1.45; min-height: 1.2em;
+}
+
+.info-block {
+  margin-top: 1.25rem; padding: 1rem 0.95rem 1.05rem;
+  border-radius: 16px;
+  background: rgba(4,18,11,0.55);
+  border: 1px solid rgba(212,167,44,0.14);
+}
+.info-line {
+  display: flex; align-items: center; justify-content: center; gap: 0.45rem;
+  font-size: 0.76rem; font-weight: 800; letter-spacing: 1.3px;
+  color: var(--gold); text-transform: uppercase;
+}
+.info-line .gift { font-size: 0.95rem; }
+.info-sub { font-size: 0.74rem; color: var(--muted); margin-top: 0.35rem; line-height: 1.45; }
+.bonus-label {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 1.4px;
+  color: rgba(247,244,233,0.45); text-transform: uppercase;
+  margin: 0.9rem 0 0.5rem;
+}
+.badges { display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap; }
+.badge {
+  font-size: 0.78rem; font-weight: 800; letter-spacing: 0.4px;
+  padding: 0.35rem 0.7rem; border-radius: 10px;
+  color: var(--deep-green);
+  background: linear-gradient(135deg, #34DD78 0%, var(--bright-green) 100%);
+  border: 1px solid rgba(212,167,44,0.55);
+  box-shadow: 0 3px 10px rgba(34,197,94,0.28), inset 0 1px 0 rgba(255,255,255,0.28);
+}
+.badge.gold {
+  background: linear-gradient(135deg, var(--light-gold) 0%, var(--gold) 100%);
+  color: #2b1c02;
+  border-color: rgba(255,255,255,0.35);
+  box-shadow: 0 3px 10px rgba(212,167,44,0.35), inset 0 1px 0 rgba(255,255,255,0.35);
+}
+
+.celebration-title {
+  font-size: 1.35rem; font-weight: 900; letter-spacing: 1.8px;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(212,167,44,0.45);
+  margin-bottom: 1.1rem;
+  animation: popIn 0.5s ease both;
+}
+.counter-wrap { padding: 1.4rem 0 1.2rem; }
+.counter {
+  font-size: 3.6rem; font-weight: 900; letter-spacing: 2px;
+  color: var(--cream);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-variant-numeric: tabular-nums;
+  line-height: 1.02;
+  text-shadow:
+    0 0 22px rgba(34,197,94,0.45),
+    0 0 44px rgba(34,197,94,0.20);
+}
+.final-block { padding: 0.2rem 0 0.4rem; }
+.final-amount {
+  font-size: 3.4rem; font-weight: 900; color: var(--bright-green);
+  line-height: 1; letter-spacing: -1.5px;
+  text-shadow:
+    0 0 16px rgba(34,197,94,0.90),
+    0 0 36px rgba(34,197,94,0.55),
+    0 0 72px rgba(34,197,94,0.28);
+  animation: popIn 0.55s cubic-bezier(0.34,1.56,0.64,1) both;
+  margin-bottom: 1.05rem;
+}
+.final-sub {
+  font-size: 0.98rem; font-weight: 800; letter-spacing: 2.4px;
+  color: var(--cream); opacity: 0.92;
+  animation: popIn 0.6s 0.12s ease both;
+  margin-bottom: 1.3rem;
+}
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.72); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.confetti-layer {
+  position: absolute; inset: 0; overflow: hidden;
+  pointer-events: none; z-index: 3;
+}
+.confetti {
+  position: absolute; top: -12px; width: 8px; height: 12px;
+  border-radius: 2px; opacity: 0;
+  animation: confettiFall 2.6s ease-out forwards;
+}
+@keyframes confettiFall {
+  0%   { opacity: 0; transform: translate3d(0,0,0) rotate(0deg); }
+  10%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(var(--drift, 0px), 340px, 0) rotate(540deg); }
+}
+
+.state-icon {
+  font-size: 2.7rem; margin-bottom: 0.55rem;
+  filter: drop-shadow(0 0 12px rgba(34,197,94,0.35));
+}
+.state-title {
+  font-size: 1.25rem; font-weight: 900; letter-spacing: 1.6px;
+  color: var(--cream); margin-bottom: 0.6rem;
+}
+.state-title .accent { color: var(--gold); }
+.state-msg {
+  font-size: 0.88rem; color: var(--muted); line-height: 1.6;
+  max-width: 300px; margin: 0 auto 0.4rem;
+}
+.state-msg strong {
+  color: var(--bright-green); font-weight: 800;
+  text-shadow: 0 0 12px rgba(34,197,94,0.45);
+}
+
+.btn-primary {
+  display: inline-block; margin-top: 1.35rem;
+  padding: 0.85rem 1.9rem; border-radius: 14px;
+  background: linear-gradient(135deg, #2FE273 0%, var(--bright-green) 45%, var(--dark-green2) 100%);
+  color: var(--deep-green);
+  font-weight: 900; font-size: 0.85rem; letter-spacing: 1px;
+  text-decoration: none;
+  border: 1px solid rgba(212,167,44,0.55);
+  box-shadow:
+    0 6px 20px rgba(34,197,94,0.32),
+    0 0 26px rgba(34,197,94,0.20),
+    inset 0 -3px 0 rgba(0,0,0,0.18);
+  transition: transform 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-primary:active { transform: scale(0.96); }
+
+@media (max-width: 380px) {
+  .card { padding: 1.4rem 0.9rem 1.5rem; border-radius: 20px; }
+  .title-main { font-size: 1.32rem; letter-spacing: 1.2px; }
+  .title-gold { font-size: 0.86rem; }
+  .title-desc { font-size: 0.76rem; margin-bottom: 1rem; }
+  .wheel-stage { max-width: 272px; }
+  .spin-btn { width: 74px; height: 74px; margin: -37px 0 0 -37px; font-size: 0.84rem; }
+  .spin-btn:disabled { font-size: 0.64rem; }
+  .counter { font-size: 3rem; }
+  .final-amount { font-size: 2.9rem; }
+  .celebration-title { font-size: 1.15rem; letter-spacing: 1.3px; }
+  .final-sub { font-size: 0.84rem; letter-spacing: 1.8px; }
+  .badge { font-size: 0.72rem; padding: 0.3rem 0.6rem; }
+}
+@media (max-width: 340px) {
+  .card { padding: 1.2rem 0.75rem 1.3rem; }
+  .wheel-stage { max-width: 240px; }
+  .spin-btn { width: 68px; height: 68px; margin: -34px 0 0 -34px; font-size: 0.76rem; }
+  .spin-btn:disabled { font-size: 0.58rem; }
+  .counter { font-size: 2.6rem; }
+  .final-amount { font-size: 2.5rem; }
+}
+@media (min-width: 420px) {
+  .wheel-stage { max-width: 330px; }
+  .counter { font-size: 4rem; }
+  .final-amount { font-size: 3.8rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a href="dashboard.html" class="logo-text">Sajvera<span class="accent">Capital</span></a>
+  <a href="dashboard.html" class="header-back">← Back</a>
+</header>
+
+<main class="page">
+  <div class="card" id="cardRoot">
+
+    <div id="loadingState" class="state">
+      <div class="clover">🍀</div>
+      <div class="title-main">Lucky Wheel</div>
+      <div class="loader"></div>
+      <p class="title-desc" style="margin-bottom:0;">Checking your Lucky Wheel…</p>
+    </div>
+
+    <div id="wheelState" class="state" style="display:none;">
+      <div class="clover">🍀</div>
+      <div class="title-main">LUCKY WHEEL</div>
+      <div class="title-gold">Your Free Bonus Spin</div>
+      <p class="title-desc">Spin once and discover your Sajvera bonus.</p>
+
+      <div class="wheel-stage">
+        <div class="wheel-pointer"></div>
+        <div class="wheel-ring"></div>
+        <div class="wheel-rotor" id="rotor">
+          <svg id="wheelSvg" viewBox="0 0 200 200" width="100%" height="100%"
+               xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+        </div>
+        <button type="button" class="spin-btn" id="spinBtn">SPIN</button>
+      </div>
+
+      <p class="hint" id="wheelHint">Tap SPIN to reveal your bonus</p>
+
+      <div class="info-block">
+        <div class="info-line"><span class="gift">🎁</span> One Free Spin</div>
+        <div class="info-sub">Your bonus is selected automatically.</div>
+        <div class="bonus-label">Possible Bonuses</div>
+        <div class="badges">
+          <span class="badge">K15</span>
+          <span class="badge">K10</span>
+          <span class="badge">K5</span>
+          <span class="badge gold">K2</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="celebrationState" class="state" style="display:none;">
+      <div class="confetti-layer" id="confettiLayer"></div>
+      <div class="celebration-title" id="celebrationTop">🎉 HAPPY BONUS! 🎉</div>
+      <div class="counter-wrap" id="counterWrap">
+        <div class="counter" id="countDisplay">00.0</div>
+      </div>
+      <div class="final-block" id="finalBlock" style="display:none;">
+        <div class="final-amount" id="finalAmount">K0.00</div>
+        <div class="final-sub">YOU WON THIS MUCH!</div>
+        <a href="dashboard.html" class="btn-primary">BACK TO DASHBOARD</a>
+      </div>
+    </div>
+
+    <div id="doneState" class="state" style="display:none;">
+      <div class="state-icon">🎯</div>
+      <div class="state-title">LUCKY WHEEL <span class="accent">USED</span></div>
+      <p class="state-msg" id="doneMsg">You have already used your free Lucky Wheel spin.</p>
+      <a href="dashboard.html" class="btn-primary">BACK TO DASHBOARD</a>
+    </div>
+
+    <div id="errorState" class="state" style="display:none;">
+      <div class="state-icon">⚠️</div>
+      <div class="state-title">UNAVAILABLE</div>
+      <p class="state-msg" id="errorMsg">Something went wrong.</p>
+      <a href="dashboard.html" class="btn-primary">BACK TO DASHBOARD</a>
+    </div>
+
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var firebaseConfig = {
+    apiKey: "AIzaSyALbWDHrhratYCCq3WpAu7jZFw6S8kTg2U",
+    authDomain: "pureore-capital-zambia.firebaseapp.com",
+    projectId: "pureore-capital-zambia",
+    storageBucket: "pureore-capital-zambia.appspot.com",
+    messagingSenderId: "78967797858",
+    appId: "1:78967797858:web:379b9692951429c345793b",
+    measurementId: "G-FQKC29NYE9"
+  };
+
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  var auth = firebase.auth();
+  var db   = firebase.firestore();
+
+  /* Display segments (K500/K200/K100/K50 are NEVER awarded) */
+  var SEGMENTS = [
+    { label: 'K500', color: '#7C3AED', award: false },
+    { label: 'K200', color: '#2563EB', award: false },
+    { label: 'K100', color: '#92400E', award: false },
+    { label: 'K50',  color: '#EAB308', award: false },
+    { label: 'K15',  color: '#111111', award: true, value: 15 },
+    { label: 'K10',  color: '#F97316', award: true, value: 10 },
+    { label: 'K5',   color: '#22C55E', award: true, value: 5  },
+    { label: 'K2',   color: '#111111', award: true, value: 2  }
+  ];
+
+  var AWARDABLE = [15, 10, 5, 2];
+
+  var SEG_ANGLE = 360 / SEGMENTS.length;
+  var SPIN_MS   = 4600;
+  var COUNT_MS  = 6000;
+
+  var currentUser     = null;
+  var currentRotation = 0;
+  var spinning        = false;
+
+  function $(id) { return document.getElementById(id); }
+  var rotor     = $('rotor');
+  var spinBtn   = $('spinBtn');
+  var wheelHint = $('wheelHint');
+
+  var STATE_IDS = ['loadingState', 'wheelState', 'celebrationState', 'doneState', 'errorState'];
+  function showState(id) {
+    for (var i = 0; i < STATE_IDS.length; i++) {
+      var el = $(STATE_IDS[i]);
+      if (el) el.style.display = (STATE_IDS[i] === id) ? 'block' : 'none';
+    }
+  }
+
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var CX = 100, CY = 100, R = 92;
+
+  function polar(deg, radius) {
+    var rad = (deg - 90) * Math.PI / 180;
+    return { x: CX + radius * Math.cos(rad), y: CY + radius * Math.sin(rad) };
+  }
+
+  function buildWheel() {
+    var svg = $('wheelSvg');
+    if (!svg) return;
+    var i, seg, a0, a1, p0, p1, d, path, mid, lp, txt, node;
+
+    for (i = 0; i < SEGMENTS.length; i++) {
+      seg = SEGMENTS[i];
+      a0 = i * SEG_ANGLE;
+      a1 = (i + 1) * SEG_ANGLE;
+      p0 = polar(a0, R);
+      p1 = polar(a1, R);
+      d = 'M' + CX + ',' + CY +
+          ' L' + p0.x.toFixed(2) + ',' + p0.y.toFixed(2) +
+          ' A' + R + ',' + R + ' 0 0 1 ' + p1.x.toFixed(2) + ',' + p1.y.toFixed(2) +
+          ' Z';
+      path = document.createElementNS(SVG_NS, 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('fill', seg.color);
+      path.setAttribute('stroke', '#04120B');
+      path.setAttribute('stroke-width', '1.1');
+      svg.appendChild(path);
+    }
+
+    for (i = 0; i < SEGMENTS.length; i++) {
+      seg = SEGMENTS[i];
+      mid = i * SEG_ANGLE + SEG_ANGLE / 2;
+      lp  = polar(mid, 64);
+      txt = document.createElementNS(SVG_NS, 'text');
+      txt.setAttribute('x', lp.x.toFixed(2));
+      txt.setAttribute('y', lp.y.toFixed(2));
+      txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('dy', '0.35em');
+      txt.setAttribute('fill', '#FFFFFF');
+      txt.setAttribute('font-size', '13');
+      txt.setAttribute('font-weight', '800');
+      txt.setAttribute('font-family', 'Inter, Arial, sans-serif');
+      txt.setAttribute('style', 'letter-spacing:0.5px;');
+      node = document.createTextNode(seg.label);
+      txt.appendChild(node);
+      svg.appendChild(txt);
+    }
+
+    var outline = document.createElementNS(SVG_NS, 'circle');
+    outline.setAttribute('cx', CX); outline.setAttribute('cy', CY);
+    outline.setAttribute('r', 92.5);
+    outline.setAttribute('fill', 'none');
+    outline.setAttribute('stroke', '#04120B');
+    outline.setAttribute('stroke-width', '3');
+    svg.appendChild(outline);
+
+    var goldRim = document.createElementNS(SVG_NS, 'circle');
+    goldRim.setAttribute('cx', CX); goldRim.setAttribute('cy', CY);
+    goldRim.setAttribute('r', 90.5);
+    goldRim.setAttribute('fill', 'none');
+    goldRim.setAttribute('stroke', '#D4A72C');
+    goldRim.setAttribute('stroke-width', '1.4');
+    goldRim.setAttribute('opacity', '0.75');
+    svg.appendChild(goldRim);
+
+    var hub = document.createElementNS(SVG_NS, 'circle');
+    hub.setAttribute('cx', CX); hub.setAttribute('cy', CY);
+    hub.setAttribute('r', 34);
+    hub.setAttribute('fill', '#04120B');
+    hub.setAttribute('stroke', '#D4A72C');
+    hub.setAttribute('stroke-width', '2');
+    svg.appendChild(hub);
+
+    for (i = 0; i < 24; i++) {
+      var dotAngle = i * 15;
+      var dp = polar(dotAngle, 97.5);
+      var dot = document.createElementNS(SVG_NS, 'circle');
+      dot.setAttribute('cx', dp.x.toFixed(2));
+      dot.setAttribute('cy', dp.y.toFixed(2));
+      dot.setAttribute('r', '1.4');
+      dot.setAttribute('fill', i % 2 === 0 ? '#F0C94A' : '#D4A72C');
+      dot.setAttribute('opacity', '0.85');
+      svg.appendChild(dot);
+    }
+  }
+
+  function pickReward() {
+    return AWARDABLE[Math.floor(Math.random() * AWARDABLE.length)];
+  }
+  function indexOfReward(value) {
+    for (var i = 0; i < SEGMENTS.length; i++) {
+      if (SEGMENTS[i].award && SEGMENTS[i].value === value) return i;
+    }
+    return 0;
+  }
+
+  function spinTo(segmentIndex, done) {
+    var segCenter = segmentIndex * SEG_ANGLE + SEG_ANGLE / 2;
+    var jitter    = (Math.random() * 22) - 11;
+    var landing   = segCenter + jitter;
+
+    var targetMod  = ((360 - landing) % 360 + 360) % 360;
+    var currentMod = ((currentRotation % 360) + 360) % 360;
+    var delta      = ((targetMod - currentMod) % 360 + 360) % 360;
+
+    var total = currentRotation + (360 * 6) + delta;
+    currentRotation = total;
+
+    var easing = 'cubic-bezier(0.14, 0.72, 0.15, 1)';
+    var secs   = (SPIN_MS / 1000) + 's';
+    var deg    = 'rotate(' + total + 'deg)';
+
+    rotor.style.webkitTransition = '-webkit-transform ' + secs + ' ' + easing;
+    rotor.style.transition       = 'transform ' + secs + ' ' + easing;
+    rotor.offsetHeight;
+    rotor.style.webkitTransform = deg;
+    rotor.style.transform       = deg;
+
+    setTimeout(done, SPIN_MS + 250);
+  }
+
+  /* ==========================================================
+     ATOMIC CLAIM — one Firestore transaction:
+       • verify eligibility (available === true, spun === false)
+       • verify reward ∈ [15, 10, 5, 2]
+       • flip flags
+       • store luckyWheelReward
+       • increment ONLY walletBalance
+       • write luckyWheelSpins/{uid}  ← deterministic ID
+     All writes succeed together or fail together.
+     ========================================================== */
+  function claimReward(reward) {
+    var userRef = db.collection('users').doc(currentUser.uid);
+    var spinRef = db.collection('luckyWheelSpins').doc(currentUser.uid);
+
+    /* Client-side sanity check (server rules will also enforce this). */
+    if (AWARDABLE.indexOf(reward) === -1) {
+      return Promise.reject(new Error('invalid-reward'));
+    }
+
+    return db.runTransaction(function (tx) {
+      return tx.get(userRef).then(function (doc) {
+        if (!doc.exists) throw new Error('profile-missing');
+
+        var d = doc.data() || {};
+
+        if (d.luckyWheelAvailable !== true || d.luckyWheelSpun !== false) {
+          throw new Error('already-spun');
+        }
+
+        tx.update(userRef, {
+          luckyWheelAvailable: false,
+          luckyWheelSpun: true,
+          luckyWheelReward: reward,
+          /* ONLY walletBalance — never depositBalance or activityBalance. */
+          walletBalance: firebase.firestore.FieldValue.increment(reward)
+        });
+
+        tx.set(spinRef, {
+          userId: currentUser.uid,
+          reward: reward,
+          spunAt: firebase.firestore.FieldValue.serverTimestamp(),
+          status: 'completed'
+        });
+      });
+    });
+  }
+
+  function onSpin() {
+    if (spinning) return;
+    spinning = true;
+
+    spinBtn.disabled = true;
+    spinBtn.textContent = 'SPINNING…';
+    wheelHint.textContent = 'Good luck! Your bonus is being revealed…';
+
+    var reward = pickReward();
+    var idx    = indexOfReward(reward);
+
+    var claimDone = false, claimOk = false, animDone = false;
+
+    function tryFinish() {
+      if (!claimDone || !animDone) return;
+      if (claimOk) {
+        showCelebration(reward);
+      } else {
+        spinning = false;
+        spinBtn.disabled = false;
+        spinBtn.textContent = 'SPIN';
+        wheelHint.textContent = 'Could not claim your bonus. Please try again.';
+      }
+    }
+
+    claimReward(reward).then(function () {
+      claimDone = true; claimOk = true; tryFinish();
+    }).catch(function (err) {
+      claimDone = true; claimOk = false;
+      console.warn('Lucky Wheel claim failed:', err);
+      tryFinish();
+    });
+
+    spinTo(idx, function () {
+      animDone = true; tryFinish();
+    });
+  }
+
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+  function showCelebration(reward) {
+    spinning = false;
+    showState('celebrationState');
+    launchConfetti();
+    startCounter(reward);
+  }
+
+  function startCounter(reward) {
+    var el = $('countDisplay');
+    el.textContent = '00.0';
+
+    var startTime = null;
+    var finished  = false;
+
+    function frame(ts) {
+      if (finished) return;
+      if (startTime === null) startTime = ts;
+
+      var t = (ts - startTime) / COUNT_MS;
+      if (t > 1) t = 1;
+
+      var v = Math.floor(t * reward * 10) / 10;
+      var whole = Math.floor(v);
+      var frac  = Math.round((v - whole) * 10);
+      if (frac === 10) { whole += 1; frac = 0; }
+
+      el.textContent = pad2(whole) + '.' + frac;
+
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        finished = true;
+        setTimeout(function () { finishCelebration(reward); }, 450);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function finishCelebration(reward) {
+    $('counterWrap').style.display = 'none';
+    $('finalAmount').textContent = 'K' + reward.toFixed(2);
+    $('finalBlock').style.display = 'block';
+  }
+
+  function launchConfetti() {
+    var layer = $('confettiLayer');
+    if (!layer) return;
+    layer.innerHTML = '';
+
+    var colors = ['#22C55E', '#16A34A', '#D4A72C', '#F0C94A', '#FFFFFF', '#F7F4E9'];
+    var count  = 16;
+
+    for (var i = 0; i < count; i++) {
+      var piece = document.createElement('span');
+      piece.className = 'confetti';
+      piece.style.left = (5 + Math.random() * 90) + '%';
+      piece.style.background = colors[i % colors.length];
+      piece.style.width = (5 + Math.random() * 5) + 'px';
+      piece.style.height = (9 + Math.random() * 7) + 'px';
+      piece.style.animationDelay = (Math.random() * 0.6) + 's';
+      piece.style.setProperty('--drift', ((Math.random() - 0.5) * 90) + 'px');
+      piece.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+      layer.appendChild(piece);
+    }
+    setTimeout(function () { if (layer) layer.innerHTML = ''; }, 3400);
+  }
+
+  function loadUser() {
+    db.collection('users').doc(currentUser.uid).get()
+      .then(function (doc) {
+        if (!doc.exists) {
+          $('errorMsg').textContent = 'Your user profile could not be found.';
+          showState('errorState');
+          return;
+        }
+        var d = doc.data() || {};
+
+        if (d.luckyWheelAvailable === true && d.luckyWheelSpun === false) {
+          showState('wheelState');
+          return;
+        }
+
+        var reward = Number(d.luckyWheelReward) || 0;
+        if (reward > 0) {
+          $('doneMsg').innerHTML =
+            'You have already used your free Lucky Wheel spin.<br>' +
+            'You won <strong>K' + reward.toFixed(2) + '</strong>.';
+        } else {
+          $('doneMsg').textContent = 'You have already used your free Lucky Wheel spin.';
+        }
+        showState('doneState');
+      })
+      .catch(function (err) {
+        console.warn('Lucky Wheel load failed:', err);
+        $('errorMsg').textContent = 'Could not load your profile. Please check your connection.';
+        showState('errorState');
+      });
+  }
+
+  buildWheel();
+  spinBtn.addEventListener('click', onSpin);
+
+  auth.onAuthStateChanged(function (user) {
+    if (!user) { window.location.href = 'login.html'; return; }
+    currentUser = user;
+    loadUser();
+  });
+
+  console.log('🍀 Sajvera Capital · Lucky Wheel (atomic + rules-locked)');
+  console.log('   Awardable amounts only: 15 / 10 / 5 / 2');
+})();
+</script>
+
+</body>
+</html>

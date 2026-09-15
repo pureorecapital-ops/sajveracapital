@@ -431,7 +431,7 @@
         }
 
         /* ================================================================
-           FEATURE LIST — FULL-WIDTH CARDS (NEW)
+           FEATURE LIST — FULL-WIDTH CARDS
         ================================================================ */
         .feature-list {
             display: flex;
@@ -748,6 +748,122 @@
         }
 
         /* ================================================================
+           WELCOME BONUS OVERLAY — blocks dashboard until bonus claimed
+        ================================================================ */
+        .wb-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(34, 197, 94, 0.16) 0%, rgba(34, 197, 94, 0) 55%),
+                linear-gradient(180deg, #071C12 0%, #04120B 60%, #030D08 100%);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.2rem;
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+        }
+
+        .wb-overlay.show {
+            display: flex;
+        }
+
+        .wb-card {
+            width: 100%;
+            max-width: 400px;
+            background: linear-gradient(180deg, #0C2619 0%, #0B2418 55%, #08190F 100%);
+            border: 1px solid rgba(212, 167, 44, 0.35);
+            border-radius: 24px;
+            padding: 1.8rem 1.4rem 1.6rem;
+            text-align: center;
+            box-shadow:
+                0 1px 0 rgba(212, 167, 44, 0.10) inset,
+                0 24px 60px rgba(0, 0, 0, 0.65),
+                0 0 60px rgba(34, 197, 94, 0.10);
+        }
+
+        .wb-icon {
+            font-size: 3rem;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            filter: drop-shadow(0 0 14px rgba(212, 167, 44, 0.45));
+            animation: wbPulse 2.2s ease-in-out infinite;
+        }
+
+        @keyframes wbPulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.08); }
+        }
+
+        .wb-title {
+            font-size: 1.35rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #D4A72C;
+            text-shadow: 0 0 18px rgba(212, 167, 44, 0.35);
+            margin-bottom: 0.35rem;
+        }
+
+        .wb-sub {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #F7F4E9;
+            margin-bottom: 0.7rem;
+        }
+
+        .wb-desc {
+            font-size: 0.8rem;
+            color: rgba(247, 244, 233, 0.60);
+            line-height: 1.55;
+            margin-bottom: 1.3rem;
+            padding: 0 0.3rem;
+        }
+
+        .wb-btn {
+            display: block;
+            width: 100%;
+            padding: 0.95rem 1rem;
+            border-radius: 14px;
+            border: 2px solid #D4A72C;
+            background: linear-gradient(135deg, #2FE273 0%, #22C55E 45%, #16A34A 100%);
+            color: #04120B;
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            cursor: pointer;
+            box-shadow:
+                0 8px 22px rgba(34, 197, 94, 0.35),
+                0 0 30px rgba(34, 197, 94, 0.15),
+                inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+            transition: transform 0.12s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .wb-btn:active {
+            transform: scale(0.97);
+        }
+
+        .wb-amounts {
+            display: flex;
+            justify-content: center;
+            gap: 0.45rem;
+            margin-top: 1.15rem;
+            flex-wrap: wrap;
+        }
+
+        .wb-amounts span {
+            font-size: 0.75rem;
+            font-weight: 800;
+            padding: 0.3rem 0.7rem;
+            border-radius: 10px;
+            background: rgba(34, 197, 94, 0.10);
+            border: 1px solid rgba(34, 197, 94, 0.35);
+            color: #22C55E;
+            letter-spacing: 0.3px;
+        }
+
+        /* ================================================================
            RESPONSIVE
         ================================================================ */
         @media (max-width: 500px) {
@@ -847,6 +963,26 @@
                 width: 5px;
                 height: 5px;
             }
+            .wb-card {
+                padding: 1.5rem 1.1rem 1.4rem;
+            }
+            .wb-icon {
+                font-size: 2.5rem;
+            }
+            .wb-title {
+                font-size: 1.15rem;
+                letter-spacing: 1.5px;
+            }
+            .wb-sub {
+                font-size: 0.85rem;
+            }
+            .wb-desc {
+                font-size: 0.75rem;
+            }
+            .wb-btn {
+                font-size: 0.8rem;
+                padding: 0.85rem 0.8rem;
+            }
         }
 
         @media (max-width: 380px) {
@@ -877,6 +1013,25 @@
     </style>
 </head>
 <body>
+
+    <!-- ===== WELCOME BONUS OVERLAY (blocking until user claims) ===== -->
+    <div class="wb-overlay" id="wbOverlay">
+        <div class="wb-card">
+            <div class="wb-icon">🎁</div>
+            <div class="wb-title">WELCOME BONUS</div>
+            <div class="wb-sub">Your free bonus is ready</div>
+            <div class="wb-desc">
+                Spin the Lucky Wheel once to claim your welcome bonus. This offer is available to new members only.
+            </div>
+            <button type="button" class="wb-btn" id="wbClaimBtn">CLAIM YOUR WELCOME BONUS</button>
+            <div class="wb-amounts">
+                <span>K2</span>
+                <span>K5</span>
+                <span>K10</span>
+                <span>K15</span>
+            </div>
+        </div>
+    </div>
 
     <!-- ===== BACKGROUND GRADIENT ===== -->
     <div class="dashboard-bg"></div>
@@ -1114,7 +1269,7 @@
                 <span class="fc-arrow">→</span>
             </div>
 
-            <!-- About Us (NEW) -->
+            <!-- About Us -->
             <div class="feature-card" onclick="location.href='about-us.html';">
                 <div class="fc-left">
                     <div class="fc-icon">
@@ -1221,6 +1376,17 @@
         var userAvatar = getEl('userAvatar');
         var greetingSub = getEl('greetingSub');
         var withdrawalInner = getEl('withdrawalInner');
+        var wbOverlay = getEl('wbOverlay');
+        var wbClaimBtn = getEl('wbClaimBtn');
+
+        // ================================================================
+        // WELCOME BONUS — CLAIM BUTTON
+        // ================================================================
+        if (wbClaimBtn) {
+            wbClaimBtn.addEventListener('click', function() {
+                window.location.href = 'lucky.html';
+            });
+        }
 
         // ================================================================
         // AUTH STATE
@@ -1269,6 +1435,18 @@
                                 hour < 17 ? msgs[1] :
                                 hour < 21 ? msgs[2] : msgs[3];
                             greetingSub.textContent = msg;
+                        }
+
+                        // ================================================
+                        // WELCOME BONUS CHECK
+                        // Show blocking overlay ONLY if the user has an
+                        // unclaimed welcome bonus (available === true and
+                        // spun === false). Once the user spins on
+                        // lucky.html, those flags flip in Firestore and
+                        // the overlay never appears again.
+                        // ================================================
+                        if (wbOverlay && data.luckyWheelAvailable === true && data.luckyWheelSpun === false) {
+                            wbOverlay.classList.add('show');
                         }
 
                         // Start withdrawal feed
@@ -1366,11 +1544,11 @@
 
         // Currency symbols per country
         var currencySymbols = {
-            '🇿🇲': 'K', // Zambian Kwacha
-            '🇿🇼': 'Z$', // Zimbabwean Dollar
-            '🇨🇩': 'FC', // Congolese Franc
-            '🇹🇿': 'TSh', // Tanzanian Shilling
-            '🇬🇭': 'GH₵' // Ghanaian Cedi
+            '🇿🇲': 'K',
+            '🇿🇼': 'Z$',
+            '🇨🇩': 'FC',
+            '🇹🇿': 'TSh',
+            '🇬🇭': 'GH₵'
         };
 
         var countries = ['🇿🇲', '🇿🇼', '🇨🇩', '🇹🇿', '🇬🇭'];
@@ -1391,16 +1569,13 @@
             var today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            // Define start dates
-            var startZambia = new Date(2026, 8, 15); // Sep 15, 2026
-            var startOther = new Date(2026, 8, 10); // Sep 10, 2026
+            var startZambia = new Date(2026, 8, 15);
+            var startOther = new Date(2026, 8, 10);
 
-            // For each country, create a pool of dates from start date to today (or cap at 20 days)
             var datePools = {};
             countries.forEach(function(flag) {
                 var start = (flag === '🇿🇲') ? new Date(startZambia) : new Date(startOther);
                 var end = new Date(today);
-                // If today is before start, use start as end
                 if (end < start) end = new Date(start);
                 var dates = [];
                 var current = new Date(start);
@@ -1411,16 +1586,14 @@
                 datePools[flag] = dates;
             });
 
-            // Number of entries: 20-25
             var numEntries = 20 + Math.floor(Math.random() * 6);
 
             for (var i = 0; i < numEntries; i++) {
                 var flag = countries[Math.floor(Math.random() * countries.length)];
                 var datePool = datePools[flag];
-                if (datePool.length === 0) continue; // skip if no dates
+                if (datePool.length === 0) continue;
                 var randomDate = datePool[Math.floor(Math.random() * datePool.length)];
 
-                // Time between 09:00 and 17:00
                 var hour = 9 + Math.floor(Math.random() * 8);
                 var minute = Math.floor(Math.random() * 60);
                 var ampm = hour >= 12 ? 'PM' : 'AM';
@@ -1435,7 +1608,6 @@
                 var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                 var dateStr = monthNames[randomDate.getMonth()] + ' ' + String(randomDate.getDate()).padStart(2, '0');
 
-                // Get currency symbol
                 var currency = currencySymbols[flag] || '';
 
                 data.push({
@@ -1450,7 +1622,6 @@
                 });
             }
 
-            // Sort by date descending (latest first)
             data.sort(function(a, b) { return b.fullDate - a.fullDate; });
             return data;
         }
@@ -1463,7 +1634,6 @@
 
             var feedData = generateWithdrawalData();
 
-            // Duplicate for seamless scrolling (3 times)
             var extendedData = [];
             for (var i = 0; i < 3; i++) {
                 extendedData = extendedData.concat(feedData);
@@ -1513,7 +1683,6 @@
                 });
             }
 
-            // Refresh feed every 60 seconds
             setInterval(function() {
                 renderWithdrawalItems();
             }, 60000);
@@ -1538,11 +1707,9 @@
             });
         });
 
-        console.log('✅ Sajvera Capital · Dashboard (full-width feature cards)');
-        console.log('📋 Features now displayed as horizontal cards with About Us');
-        console.log('🇿🇲 Zambia: dates from 15 Sep 2026, currency K');
-        console.log('Others: dates from 10 Sep 2026, with their own currencies');
-        console.log('🖼️ Added 4 new Sajvera Capital images to the slideshow (total 11 slides)');
+        console.log('✅ Sajvera Capital · Dashboard (with Welcome Bonus block)');
+        console.log('🎁 New users are blocked until they claim their Lucky Wheel welcome bonus.');
+        console.log('🍀 Claim button → lucky.html → spin → bonus into walletBalance → back here.');
     </script>
 </body>
 </html>
