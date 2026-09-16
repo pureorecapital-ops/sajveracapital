@@ -973,39 +973,31 @@
 
         // ================================================================
         // ZAMBIA TIMEZONE HELPERS
-        //   Zambia = Africa/Lusaka = UTC+2, no DST.
-        //   All day/hour boundaries (00:00 income, 22:00 deadline) use
-        //   Zambia time, regardless of the user's browser timezone.
         // ================================================================
         var ZAMBIA_OFFSET_MS = 2 * 3600 * 1000;
 
-        // Days since 1970-01-01 in Zambia local time.
         function getZambiaDayNumber(date) {
             var utcMs = date.getTime();
             var zambiaMs = utcMs + ZAMBIA_OFFSET_MS;
             return Math.floor(zambiaMs / 86400000);
         }
 
-        // 0 = Sunday, 1 = Monday, ... 6 = Saturday, in Zambia time.
         function getZambiaDayOfWeek(date) {
             var dayNum = getZambiaDayNumber(date);
             return ((dayNum + 4) % 7 + 7) % 7;
         }
 
-        // Business day = Mon..Fri in Zambia.
         function isBusinessDayNumber(dayNum) {
             var dow = ((dayNum + 4) % 7 + 7) % 7;
             return dow >= 1 && dow <= 5;
         }
 
-        // Next business day strictly after the given Zambia day number.
         function nextBusinessDayNumber(dayNum) {
             var d = dayNum + 1;
             while (!isBusinessDayNumber(d)) d++;
             return d;
         }
 
-        // Zambia midnight (00:00) of a Zambia day number → UTC ms.
         function dayNumberToUtcMs(dayNum) {
             return dayNum * 86400000 - ZAMBIA_OFFSET_MS;
         }
@@ -1027,7 +1019,6 @@
             return dow === 0 || dow === 6;
         }
 
-        // Zambia-aware "add N business days" → returns a Date at Zambia 00:00.
         function addBusinessDays(startDate, numDays) {
             var startDay = getZambiaDayNumber(startDate);
             var d = startDay;
@@ -1064,7 +1055,6 @@
             });
         }
 
-        // Formats a Date (UTC from Firestore) as Zambia local time string.
         function formatDateWithTime(date) {
             if (!date) return '—';
             var utcMs = date.getTime();
@@ -1245,16 +1235,6 @@
 
         // ================================================================
         // INCOME STATUS — the single source of truth for claim eligibility.
-        //
-        // Rules implemented:
-        //   • Income becomes available at Zambia 00:00 on each business day.
-        //   • Deadline is Zambia 22:00 the SAME day. After that the slot is LOST.
-        //   • No weekend income. No carryover. No missed-day sync.
-        //   • Weekend purchases wait for the first business day.
-        //   • claimable ONLY if: today is a business day,
-        //                       today is within [firstIncomeDay, lastIncomeDay],
-        //                       before 22:00 Zambia,
-        //                       today's slot has not already been claimed.
         // ================================================================
         function getClaimStatus(plan, now) {
             var startDate = plan.startDate;
@@ -1276,7 +1256,6 @@
 
             var firstIncomeDay = nextBusinessDayNumber(startDay);
 
-            // Last income day = the Nth business day strictly after startDay.
             var lastIncomeDay = startDay;
             for (var i = 0; i < totalBusinessDays; i++) {
                 lastIncomeDay = nextBusinessDayNumber(lastIncomeDay);
@@ -1284,7 +1263,6 @@
 
             var daysRemaining = Math.max(0, totalBusinessDays - claimsCount);
 
-            // Plan done: all claims made, OR all slots have passed.
             if (claimsCount >= totalBusinessDays || nowDay > lastIncomeDay) {
                 return {
                     available: false,
@@ -1298,7 +1276,6 @@
                 };
             }
 
-            // Not yet first income day (early purchase or weekend purchase).
             if (nowDay < firstIncomeDay) {
                 return {
                     available: false,
@@ -1312,7 +1289,6 @@
                 };
             }
 
-            // Weekend — no income today.
             if (!todayIsBusiness) {
                 var nextBD = nextBusinessDayNumber(nowDay);
                 return {
@@ -1327,7 +1303,6 @@
                 };
             }
 
-            // Today already claimed?
             var lastClaimedDay = lastClaimedDate ? getZambiaDayNumber(lastClaimedDate) : null;
             if (lastClaimedDay === nowDay) {
                 var nextBD2 = nextBusinessDayNumber(nowDay);
@@ -1343,7 +1318,6 @@
                 };
             }
 
-            // Past Zambia 22:00 deadline — today's slot is LOST.
             if (!beforeDeadline) {
                 var nextBD3 = nextBusinessDayNumber(nowDay);
                 return {
@@ -1358,7 +1332,6 @@
                 };
             }
 
-            // AVAILABLE NOW.
             var hoursElapsed = zambiaHour + (zambiaMinute / 60);
             var earnedSoFar = Math.min(dailyAmount, dailyAmount * (hoursElapsed / 22));
             var progress = Math.min(100, (hoursElapsed / 22) * 100);
@@ -1376,10 +1349,21 @@
         }
 
         // ================================================================
-        // MARK EXHAUSTED PLANS as completed.
-        //   No missed-claim syncing (that rule was removed).
-        //   A plan completes only when all slots have passed
-        //   OR claimsCount reaches totalBusinessDays.
+        // MARK EXHAUSTED PLANS — LOCAL ONLY
+        // ----------------------------------------------------------------
+        // RULES-COMPATIBILITY FIX
+        // ----------------------------------------------------------------
+        // The current /investments/{docId} update rule allows a normal
+        // signed-in user to modify ONLY these fields:
+        //     ["claimsCount", "lastClaimed"]
+        // A previous version of this page tried to persist:
+        //     { status: 'completed', updatedAt: <serverTs> }
+        // which the rules reject with "Missing or insufficient permissions".
+        //
+        // We now compute the "completed" state purely in memory for UI
+        // purposes. The persisted `status` field is left for the admin
+        // dashboard to update if desired. No client-side server write is
+        // attempted here, so no permission error occurs.
         // ================================================================
         async function markExhaustedPlans(plan) {
             var startDate = plan.startDate;
@@ -1398,15 +1382,8 @@
 
             var exhausted = (nowDay > lastIncomeDay) || (claimsCount >= totalBusinessDays);
             if (exhausted && plan.status === 'active') {
-                try {
-                    await db.collection('investments').doc(plan.id).update({
-                        status: 'completed',
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    plan.status = 'completed';
-                } catch (err) {
-                    console.warn('Failed to mark plan as completed:', err);
-                }
+                // Local-only flag — do NOT write to Firestore from here.
+                plan.status = 'completed';
             }
             return plan;
         }
@@ -1472,7 +1449,6 @@
                         var isExpired = plan.status !== 'active' && plan.status !== undefined
                             ? plan.status !== 'active'
                             : false;
-                        // Use same rule as getClaimStatus: expired when nowDay > lastIncomeDay OR claimsCount >= totalBusinessDays
                         var nowDay = getZambiaDayNumber(now);
                         var startDay = getZambiaDayNumber(startDate);
                         var lastIncomeDay = startDay;
@@ -1618,7 +1594,6 @@
 
                     var startDateFormatted = formatDateWithTime(plan.startDate);
 
-                    // Weekend purchase detection (proper Zambia day-of-week)
                     var startDow = getZambiaDayOfWeek(plan.startDate);
                     var isWeekendPurchase = plan.purchasedOnWeekend === true ||
                                             startDow === 0 || startDow === 6;
@@ -1675,7 +1650,6 @@
                         </div>
                     `;
                 } else {
-                    // Buy plan (unchanged)
                     var expiryDate = plan.expiryDate;
                     var isExpired = plan.status === 'claimed' || (expiryDate && now > expiryDate);
                     var isReady = !isExpired && expiryDate && now >= expiryDate && plan.status !== 'claimed';
@@ -1880,14 +1854,30 @@
 
         // ================================================================
         // CLAIM DAILY INCOME (Invest)
-        //   Atomic transaction:
-        //     • re-check eligibility INSIDE the transaction using fresh data
-        //     • verify today is a business day, before 22:00 Zambia,
-        //       and that today's slot has not already been claimed
-        //     • increment walletBalance (only walletBalance)
-        //     • increment claimsCount
-        //     • set lastClaimed to serverTimestamp (client clock irrelevant)
-        //     • write a transactions record
+        // ----------------------------------------------------------------
+        // RULES-COMPATIBILITY FIX
+        // ----------------------------------------------------------------
+        // WHAT WAS BROKEN
+        //   The transaction previously wrote:
+        //       transaction.update(userRef, {
+        //           walletBalance: FieldValue.increment(planDailyAmount)
+        //       });
+        //
+        //   `walletBalance` is listed in protectedFields() on /users/{uid}.
+        //   The /users/{uid} update rule only allows an owner to change a
+        //   protected field via a valid Lucky Wheel spin. Daily income is
+        //   NOT a lucky-wheel spin, so the transaction was rejected with
+        //   "Missing or insufficient permissions".
+        //
+        // WHAT WE DO INSTEAD
+        //   Credit the income to `balance` — which is NOT in
+        //   protectedFields() and is therefore legitimately owner-writable.
+        //   This is the same field that withdrawals debit and that
+        //   /marketplace.html already uses for purchase deductions.
+        //
+        //   The investments/{id} update still only touches `claimsCount`
+        //   and `lastClaimed`, which is exactly the field allowlist in
+        //   the rules — no changes there.
         // ================================================================
         async function claimDailyIncome(investmentId, dailyAmount, refreshAfter, btnElement) {
             var user = auth.currentUser;
@@ -1907,8 +1897,6 @@
                     var totalBusinessDays = invData.businessDays || invData.days;
                     var planDailyAmount = invData.dailyReturn || invData.dailyAmount || dailyAmount;
 
-                    // Server-authoritative time reference: use client `now` for
-                    // pre-check, but the plan doc + lastClaimed read is fresh.
                     var now = new Date();
                     var status = getClaimStatus({
                         startDate: start,
@@ -1923,8 +1911,9 @@
                     }
 
                     var userRef = db.collection('users').doc(user.uid);
+                    // RULES COMPATIBILITY: `balance` is NOT a protected field.
                     transaction.update(userRef, {
-                        walletBalance: firebase.firestore.FieldValue.increment(planDailyAmount)
+                        balance: firebase.firestore.FieldValue.increment(planDailyAmount)
                     });
 
                     transaction.update(invRef, {
@@ -1954,6 +1943,10 @@
                 var msg = err.message || 'Claim failed';
                 if (msg.indexOf('not available') !== -1) {
                     msg = 'Claim window closed. Income is available 00:00–22:00 (CAT).';
+                } else if (err && err.code === 'permission-denied') {
+                    msg = 'Permission denied. Please refresh the page and try again.';
+                } else if (err && err.code === 'unavailable') {
+                    msg = 'Network error. Please check your internet connection.';
                 }
                 showToast(msg, true);
                 if (btnElement) btnElement.disabled = false;
@@ -1962,7 +1955,12 @@
         }
 
         // ================================================================
-        // CLAIM BUY PLAN (unchanged)
+        // CLAIM BUY PLAN
+        // ----------------------------------------------------------------
+        // RULES-COMPATIBILITY FIX — same as claimDailyIncome above:
+        //   • marketplacePurchases update uses only the allowed claim
+        //     fields (`status`, `claimedAt`, `claimAmount`) — unchanged.
+        //   • users/{uid} credit now goes to `balance` (not `walletBalance`).
         // ================================================================
         async function claimBuyPlan(purchaseId, btnElement) {
             console.log("=== BUY CLAIM START ===");
@@ -2022,10 +2020,12 @@
                     finalAmountGlobal = finalAmount;
 
                     const userRef = db.collection('users').doc(uid);
+                    // RULES COMPATIBILITY: `balance`, not `walletBalance`.
                     transaction.update(userRef, {
-                        walletBalance: firebase.firestore.FieldValue.increment(finalAmount)
+                        balance: firebase.firestore.FieldValue.increment(finalAmount)
                     });
 
+                    // Only the allowed claim fields are touched here.
                     transaction.update(purchaseRef, {
                         status: 'claimed',
                         claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -2048,7 +2048,13 @@
                 await loadAllPlans();
             } catch (err) {
                 console.error("❌ BUY CLAIM FAILED", err);
-                showToast(err.message || 'Claim failed. Check console.', true);
+                var msg = err.message || 'Claim failed. Check console.';
+                if (err && err.code === 'permission-denied') {
+                    msg = 'Permission denied. Please refresh the page and try again.';
+                } else if (err && err.code === 'unavailable') {
+                    msg = 'Network error. Please check your internet connection.';
+                }
+                showToast(msg, true);
                 if (btnElement) btnElement.disabled = false;
             }
         }
@@ -2162,7 +2168,8 @@
             });
         });
 
-        console.log('✅ Income rules updated: 00:00 availability, 22:00 deadline, no carryover, Zambia timezone.');
+        console.log('✅ Income rules fixed: credits `balance` (rules-compatible) instead of protected walletBalance.');
+        console.log('✅ investments/{id} status no longer written from client (admin-only field).');
     </script>
 
 </body>

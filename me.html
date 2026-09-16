@@ -31,8 +31,6 @@
             flex-direction: column;
             color: #F7F4E9;
             position: relative;
-            /* overflow-y: auto;  REMOVED — caused scroll jump */
-            /* -webkit-overflow-scrolling: touch;  REMOVED — caused scroll jump on Android */
         }
 
         /* ===== FULL SCREEN BLURRED BACKGROUND ===== */
@@ -1435,41 +1433,68 @@
 
         // ================================================================
         // SAVINGS DATA LISTENER
+        // ----------------------------------------------------------------
+        // RULES-COMPATIBILITY FIX
+        // ----------------------------------------------------------------
+        // The savings rules define a TOP-LEVEL collection:
+        //     match /savings/{userId} { allow read: if owner(userId) || admin(); ... }
+        //
+        // The previous code listened on `users/{uid}/savings` (a sub-
+        // collection), which has no rule → it silently failed and always
+        // showed 0. We now read the correct top-level `savings/{uid}` doc.
+        //
+        // Data shape supported:
+        //   { balance: Number, branch: 'wealth'|'reserve'|'growth', ... }
+        //   or  { wealth: Number, reserve: Number, growth: Number, ... }
         // ================================================================
         var savingsUnsub = null;
 
         function watchSavings(userId) {
             if (savingsUnsub) savingsUnsub();
 
-            savingsUnsub = db.collection('users').doc(userId).collection('savings')
-                .onSnapshot(function(snapshot) {
-                    if (snapshot.empty) {
-                        updateSavingsUI({ wealth: 0, reserve: 0, growth: 0 }, { wealth: 0, reserve: 0,
-                            growth: 0 });
-                        return;
-                    }
-
+            savingsUnsub = db.collection('savings').doc(userId)
+                .onSnapshot(function(doc) {
                     var approved = { wealth: 0, reserve: 0, growth: 0 };
                     var pending = { wealth: 0, reserve: 0, growth: 0 };
 
-                    snapshot.forEach(function(doc) {
-                        var data = doc.data();
+                    if (doc.exists) {
+                        var data = doc.data() || {};
                         var branch = data.branch || 'wealth';
-                        var amount = data.amount || 0;
-                        var status = data.status || 'pending';
 
-                        if (status === 'approved') {
-                            if (approved[branch] !== undefined) approved[branch] += amount;
-                        } else if (status === 'pending') {
-                            if (pending[branch] !== undefined) pending[branch] += amount;
+                        // Case 1: single-doc shape (one branch per user)
+                        if (typeof data.balance === 'number') {
+                            if (approved[branch] !== undefined) {
+                                approved[branch] = Number(data.balance) || 0;
+                            }
+                            // pending balance (if the doc also tracks it)
+                            if (typeof data.pendingBalance === 'number' && pending[branch] !== undefined) {
+                                pending[branch] = Number(data.pendingBalance) || 0;
+                            }
                         }
-                    });
+
+                        // Case 2: per-branch fields on the same doc
+                        ['wealth', 'reserve', 'growth'].forEach(function(b) {
+                            if (typeof data[b] === 'number') approved[b] = Number(data[b]) || 0;
+                            if (typeof data[b + 'Pending'] === 'number') pending[b] = Number(data[b + 'Pending']) || 0;
+                        });
+
+                        // Case 3: explicit maps
+                        if (data.approved && typeof data.approved === 'object') {
+                            ['wealth', 'reserve', 'growth'].forEach(function(b) {
+                                if (typeof data.approved[b] === 'number') approved[b] = Number(data.approved[b]) || 0;
+                            });
+                        }
+                        if (data.pending && typeof data.pending === 'object') {
+                            ['wealth', 'reserve', 'growth'].forEach(function(b) {
+                                if (typeof data.pending[b] === 'number') pending[b] = Number(data.pending[b]) || 0;
+                            });
+                        }
+                    }
 
                     updateSavingsUI(approved, pending);
                 }, function(err) {
                     console.warn('Savings listener error:', err);
-                    updateSavingsUI({ wealth: 0, reserve: 0, growth: 0 }, { wealth: 0, reserve: 0,
-                    growth: 0 });
+                    updateSavingsUI({ wealth: 0, reserve: 0, growth: 0 }, { wealth: 0, reserve: 0, growth: 0 });
                 });
         }
 
@@ -1521,13 +1546,46 @@
                         var firstLetter = fullName.charAt(0).toUpperCase();
                         document.getElementById('avatarLetter').textContent = firstLetter;
 
-                        var deposit = data.depositBalance || 0;
-                        var wallet = data.walletBalance || 0;
-                        var total = deposit + wallet;
+                        // ----------------------------------------------------
+                        // BALANCE READING — FIX
+                        // ----------------------------------------------------
+                        // The admin dashboard writes to TWO balance fields on
+                        // the user document:
+                        //   - `depositBalance`  (labelled "Deposit Balance")
+                        //   - `balance`         (labelled "Withdraw Balance")
+                        // Other systems also write:
+                        //   - `walletBalance`    (bonuses, lucky wheel, treasure)
+                        //   - `activityBalance`  (activity rewards)
+                        //
+                        // The profile previously only read `depositBalance`,
+                        // `walletBalance` and `activityBalance`, so admin
+                        // changes to `balance` were invisible here. We now
+                        // read ALL FOUR and combine them so any admin-side
+                        // update is reflected on this page:
+                        //   Deposit card = depositBalance
+                        //   Wallet card  = walletBalance + balance
+                        //   Total card   = depositBalance + walletBalance
+                        //                  + balance + activityBalance
+                        // ----------------------------------------------------
+                        var deposit = Number(data.depositBalance) || 0;
+                        var wallet = Number(data.walletBalance) || 0;
+                        var mainBalance = Number(data.balance) || 0;
+                        var activity = Number(data.activityBalance) || 0;
+
+                        var displayWallet = wallet + mainBalance;
+                        var total = deposit + displayWallet + activity;
 
                         document.getElementById('depositBalance').textContent = deposit.toFixed(2);
-                        document.getElementById('walletBalance').textContent = wallet.toFixed(2);
+                        document.getElementById('walletBalance').textContent = displayWallet.toFixed(2);
                         document.getElementById('totalBalance').textContent = total.toFixed(2);
+
+                        // Debug helper — inspect the exact live user doc in DevTools.
+                        console.log('[Profile] user doc updated:', {
+                            depositBalance: data.depositBalance,
+                            walletBalance: data.walletBalance,
+                            balance: data.balance,
+                            activityBalance: data.activityBalance
+                        });
                     }
                 }, function(err) {
                     console.warn('Profile listener error:', err);
@@ -1725,9 +1783,8 @@
         });
 
         console.log('✅ Profile page · Sajvera Capital · Blue blur theme');
-        console.log('🔵 Customer Service card added (points to support.html)');
-        console.log('📱 All links to support.html now work correctly.');
-        console.log('✅ Scrolling fix: removed overflow-y:auto and -webkit-overflow-scrolling:touch from body');
+        console.log('🔵 Balance fix: reads depositBalance + walletBalance + balance + activityBalance');
+        console.log('🔵 Savings fix: reads top-level savings/{uid} (matches Firestore rules)');
     </script>
 
 </body>

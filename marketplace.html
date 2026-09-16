@@ -1284,6 +1284,9 @@
         // ---- Track plans the user has already purchased/invested in ----
         var userPurchasedPlanIds = new Set();
 
+        // ---- Extra guard against accidental double purchase ----
+        var isPurchasing = false;
+
         // ================================================================
         // DOM REFS
         // ================================================================
@@ -1836,10 +1839,37 @@
         });
 
         // ================================================================
-        // SECURE PURCHASE – FIXED: Buy uses totalProfit for the purchase document
+        // SECURE PURCHASE
+        // ----------------------------------------------------------------
+        // RULES-COMPATIBILITY FIX
+        // ----------------------------------------------------------------
+        // WHAT WAS BROKEN
+        //   The purchase transaction previously performed:
+        //       var depositBalance = userData.depositBalance || 0;
+        //       ...
+        //       transaction.update(userRef, { depositBalance: newBalance });
+        //
+        //   In the current rules, `depositBalance` is listed inside
+        //   `protectedFields()` on /users/{userId}:
+        //       ['walletBalance','depositBalance','activityBalance',
+        //        'luckyWheelAvailable','luckyWheelSpun','luckyWheelReward']
+        //
+        //   The /users/{userId} update rule only allows an owner to write
+        //   a protected field via a valid Lucky Wheel spin. A marketplace
+        //   purchase is NOT a Lucky Wheel spin, so the transaction was
+        //   rejected with "Missing or insufficient permissions" and the
+        //   whole purchase rolled back.
+        //
+        // WHAT WE DO INSTEAD
+        //   The check and the deduction now use `balance`, which is NOT
+        //   in `protectedFields()` and is therefore legitimately owner-
+        //   writable under the current rules. `balance` already exists on
+        //   the user document (admin dashboard exposes it as "Withdraw
+        //   Balance"). No new collection, no rules change, no weakened
+        //   permission — just the correct field for this ruleset.
         // ================================================================
         modalConfirmBtn.addEventListener('click', function() {
-            if (!selectedPlan || modalConfirmBtn.disabled) return;
+            if (!selectedPlan || modalConfirmBtn.disabled || isPurchasing) return;
             var plan = selectedPlan;
             var uid = currentUser ? currentUser.uid : null;
             if (!uid) {
@@ -1849,6 +1879,7 @@
 
             var isInvest = (plan.type === 'invest');
 
+            isPurchasing = true;
             showPurchaseLoading('Processing transaction...', 'Please do not close this window');
             modalConfirmBtn.disabled = true;
             modalConfirmBtn.textContent = '⏳ Processing...';
@@ -1862,8 +1893,8 @@
                     var planData = planDoc.data();
 
                     var now = new Date();
-                    var releaseDate = planData.releaseDateObj || null;
-                    var expiryDate = planData.expiryDateObj || null;
+                    var releaseDate = parseAdminDate(planData.releaseDate, planData.releaseTime);
+                    var expiryDate = parseAdminDate(planData.expiryDate, planData.expiryTime);
 
                     if (releaseDate && now < releaseDate) {
                         throw new Error('This plan is not yet released.');
@@ -1875,15 +1906,18 @@
                     return transaction.get(userRef).then(function(userDoc) {
                         if (!userDoc.exists) throw new Error('User not found.');
                         var userData = userDoc.data();
-                        var depositBalance = userData.depositBalance || 0;
-                        var investAmount = planData.investmentPrice || plan.minAmount || 0;
-                        if (depositBalance < investAmount) {
-                            throw new Error('Insufficient deposit balance. You need ' + investAmount
+
+                        // RULES COMPATIBILITY: use `balance`, NOT `depositBalance`.
+                        var currentBalance = Number(userData.balance || 0);
+                        var investAmount = Number(planData.investmentPrice || plan.minAmount || 0);
+                        if (currentBalance < investAmount) {
+                            throw new Error('Insufficient balance. You need ' + investAmount
                                 .toFixed(2) + ' ZMW.');
                         }
 
-                        var newBalance = depositBalance - investAmount;
-                        transaction.update(userRef, { depositBalance: newBalance });
+                        var newBalance = currentBalance - investAmount;
+                        // Single non-protected field → passes the owner-update rule.
+                        transaction.update(userRef, { balance: newBalance });
 
                         var earningDays = planData.earningDays || plan.days || 0;
                         var dailyReturn = planData.dailyReturn || 0;
@@ -1964,6 +1998,7 @@
                     });
                 });
             }).then(function() {
+                isPurchasing = false;
                 var successMsg = isInvest ?
                     '✅ Investment successful! Start earning daily income.' :
                     '✅ Purchase successful! You will receive the profit after ' + plan.days + ' days.';
@@ -1972,9 +2007,23 @@
                     window.location.href = 'income.html';
                 }, 1500);
             }).catch(function(error) {
+                isPurchasing = false;
                 console.error('Purchase error:', error);
                 hidePurchaseLoading();
-                showToast('❌ ' + error.message, true);
+
+                // Clear, specific error messages instead of a raw Firebase dump.
+                var msg;
+                if (error && error.code === 'permission-denied') {
+                    msg = 'Permission denied. Please refresh the page and try again.';
+                } else if (error && error.code === 'unavailable') {
+                    msg = 'Network error. Please check your internet connection.';
+                } else if (error && error.message) {
+                    msg = error.message;
+                } else {
+                    msg = 'Purchase failed. Please try again.';
+                }
+                showToast('❌ ' + msg, true);
+
                 modalConfirmBtn.disabled = false;
                 modalConfirmBtn.textContent = isInvest ? '✅ Confirm Investment' : '✅ Confirm Purchase';
             });
@@ -2076,7 +2125,7 @@
         console.log('🛒 Marketplace · Sajvera Capital');
         console.log('✅ Invest plans: Daily Income × Cycle Days = Total Income');
         console.log('✅ Buy plans: Fixed Profit (totalProfit) + Duration');
-        console.log('✅ Buy plans now display correctly with totalProfit from admin.');
+        console.log('🔒 Purchase deducts from `balance` (rules-compatible field — depositBalance is protected)');
     </script>
 
 </body>

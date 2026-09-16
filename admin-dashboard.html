@@ -4384,16 +4384,20 @@
                     approvedBy: currentAdmin ? currentAdmin.uid : 'admin'
                 });
 
-                const userSavingsRef = db.collection('users').doc(userId).collection('savings');
-                const userSavingsSnap = await userSavingsRef.where('branch', '==', branch).limit(1).get();
-                if (!userSavingsSnap.empty) {
-                    const existingDoc = userSavingsSnap.docs[0];
-                    const currentBalance = Number(existingDoc.data().balance || 0);
-                    await existingDoc.ref.update({ balance: currentBalance + amount, updatedAt: firebase.firestore
-                            .FieldValue.serverTimestamp() });
+                // FIX: Rules define `savings/{userId}` as a top-level doc (doc ID == userId).
+                // Previously code used `users/{userId}/savings` subcollection, which has no rule.
+                const savingsRef = db.collection('savings').doc(userId);
+                const savingsDoc = await savingsRef.get();
+                if (savingsDoc.exists) {
+                    const currentBalance = Number(savingsDoc.data().balance || 0);
+                    await savingsRef.update({
+                        balance: currentBalance + amount,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                 } else {
-                    await userSavingsRef.add({
-                        branch,
+                    await savingsRef.set({
+                        userId: userId,
+                        branch: branch,
                         balance: amount,
                         status: 'active',
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -4449,14 +4453,16 @@
                     approvedBy: currentAdmin ? currentAdmin.uid : 'admin'
                 });
 
-                const userSavingsRef = db.collection('users').doc(userId).collection('savings');
-                const userSavingsSnap = await userSavingsRef.where('branch', '==', branch).limit(1).get();
-                if (userSavingsSnap.empty) throw new Error('User has no savings balance in this branch.');
-                const existingDoc = userSavingsSnap.docs[0];
-                const currentBalance = Number(existingDoc.data().balance || 0);
+                // FIX: Rules define `savings/{userId}` as a top-level doc (doc ID == userId).
+                const savingsRef = db.collection('savings').doc(userId);
+                const savingsDoc = await savingsRef.get();
+                if (!savingsDoc.exists) throw new Error('User has no savings balance.');
+                const currentBalance = Number(savingsDoc.data().balance || 0);
                 if (currentBalance < amount) throw new Error('Insufficient savings balance.');
-                await existingDoc.ref.update({ balance: currentBalance - amount, updatedAt: firebase.firestore
-                        .FieldValue.serverTimestamp() });
+                await savingsRef.update({
+                    balance: currentBalance - amount,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
 
                 const userRef = db.collection('users').doc(userId);
                 const userDoc = await userRef.get();
@@ -4539,7 +4545,7 @@
         }
 
         // ================================================================
-        // 26. JOBS
+        // 26. JOBS  — FIXED: rules define `applications`, not `jobApplications`
         // ================================================================
         let allJobs = [];
 
@@ -4547,7 +4553,7 @@
             const wrap = document.getElementById('jobsTableWrap');
             wrap.innerHTML = '<div class="loading-placeholder"><div class="spinner"></div> Loading applications...</div>';
             try {
-                const snap = await db.collection('jobApplications').orderBy('submittedAt', 'desc').get();
+                const snap = await db.collection('applications').orderBy('submittedAt', 'desc').get();
                 allJobs = [];
                 snap.forEach(d => { const data = d.data();
                     data.id = d.id;
@@ -4612,7 +4618,7 @@
             if (!await showConfirm(statusLabels[newStatus] || 'Change status?', 'This will update the application status.'))
                 return;
             try {
-                await db.collection('jobApplications').doc(id).update({
+                await db.collection('applications').doc(id).update({
                     status: newStatus,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     reviewedBy: currentAdmin ? currentAdmin.uid : 'admin'
@@ -4625,7 +4631,7 @@
 
         window.viewJobApplication = async function(id) {
             try {
-                const doc = await db.collection('jobApplications').doc(id).get();
+                const doc = await db.collection('applications').doc(id).get();
                 if (!doc.exists) { showToast('Application not found.', 'error'); return; }
                 const d = doc.data();
                 let answersHtml = '';
@@ -4762,9 +4768,9 @@
                 loadSettings();
                 loadAppearance();
                 loadRecentActivities();
-                console.log('✅ Sajvera Admin Dashboard initialized with fixes.');
-                console.log('📌 Plan type: Invest = Daily Return × Days | Buy = Profit + Duration (no multiplication)');
-                console.log('📌 Reset Stats: Deletes deposit/withdrawal records. User balances are NOT affected.');
+                console.log('✅ Sajvera Admin Dashboard initialized with rules-compatibility fixes.');
+                console.log('📌 Savings now uses top-level `savings/{userId}` (per rules).');
+                console.log('📌 Job applications now uses `applications` collection (per rules).');
             } catch (err) { console.error('Initialization error:', err); }
         }
 
