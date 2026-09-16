@@ -1841,32 +1841,20 @@
         // ================================================================
         // SECURE PURCHASE
         // ----------------------------------------------------------------
-        // RULES-COMPATIBILITY FIX
+        // MARKETPLACE BALANCE MODEL
         // ----------------------------------------------------------------
-        // WHAT WAS BROKEN
-        //   The purchase transaction previously performed:
-        //       var depositBalance = userData.depositBalance || 0;
-        //       ...
-        //       transaction.update(userRef, { depositBalance: newBalance });
+        // The marketplace deducts from `depositBalance` — that is the
+        // field the admin dashboard credits after approving a deposit,
+        // and the field the user's profile shows as "Deposit Balance
+        // (For buying plans)".
         //
-        //   In the current rules, `depositBalance` is listed inside
-        //   `protectedFields()` on /users/{userId}:
-        //       ['walletBalance','depositBalance','activityBalance',
-        //        'luckyWheelAvailable','luckyWheelSpun','luckyWheelReward']
+        // `walletBalance` is reserved for bonuses (lucky wheel, daily
+        // check-in, treasure, income claims) and is the field that
+        // withdrawals debit. `balance` is a legacy field the admin
+        // dashboard exposes as "Withdraw Balance".
         //
-        //   The /users/{userId} update rule only allows an owner to write
-        //   a protected field via a valid Lucky Wheel spin. A marketplace
-        //   purchase is NOT a Lucky Wheel spin, so the transaction was
-        //   rejected with "Missing or insufficient permissions" and the
-        //   whole purchase rolled back.
-        //
-        // WHAT WE DO INSTEAD
-        //   The check and the deduction now use `balance`, which is NOT
-        //   in `protectedFields()` and is therefore legitimately owner-
-        //   writable under the current rules. `balance` already exists on
-        //   the user document (admin dashboard exposes it as "Withdraw
-        //   Balance"). No new collection, no rules change, no weakened
-        //   permission — just the correct field for this ruleset.
+        // With the current open rules (`allow write: if signedIn()`),
+        // owner updates to `depositBalance` pass cleanly.
         // ================================================================
         modalConfirmBtn.addEventListener('click', function() {
             if (!selectedPlan || modalConfirmBtn.disabled || isPurchasing) return;
@@ -1907,17 +1895,17 @@
                         if (!userDoc.exists) throw new Error('User not found.');
                         var userData = userDoc.data();
 
-                        // RULES COMPATIBILITY: use `balance`, NOT `depositBalance`.
-                        var currentBalance = Number(userData.balance || 0);
+                        // Marketplace purchases are paid from `depositBalance`.
+                        var currentBalance = Number(userData.depositBalance || 0);
                         var investAmount = Number(planData.investmentPrice || plan.minAmount || 0);
                         if (currentBalance < investAmount) {
-                            throw new Error('Insufficient balance. You need ' + investAmount
+                            throw new Error('Insufficient Deposit Balance. You need ' + investAmount
                                 .toFixed(2) + ' ZMW.');
                         }
 
                         var newBalance = currentBalance - investAmount;
-                        // Single non-protected field → passes the owner-update rule.
-                        transaction.update(userRef, { balance: newBalance });
+                        // Deduct from `depositBalance` — the money-for-plans wallet.
+                        transaction.update(userRef, { depositBalance: newBalance });
 
                         var earningDays = planData.earningDays || plan.days || 0;
                         var dailyReturn = planData.dailyReturn || 0;
@@ -2125,7 +2113,8 @@
         console.log('🛒 Marketplace · Sajvera Capital');
         console.log('✅ Invest plans: Daily Income × Cycle Days = Total Income');
         console.log('✅ Buy plans: Fixed Profit (totalProfit) + Duration');
-        console.log('🔒 Purchase deducts from `balance` (rules-compatible field — depositBalance is protected)');
+        console.log('💰 Purchases deduct from `depositBalance` (money for buying plans)');
+        console.log('💵 `walletBalance` is reserved for bonuses & withdrawals');
     </script>
 
 </body>

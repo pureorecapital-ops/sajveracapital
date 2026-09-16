@@ -841,7 +841,7 @@
             </p>
         </div>
 
-        <!-- ===== TREASURE ASSISTANT (NEW · UI ONLY) ===== -->
+        <!-- ===== TREASURE ASSISTANT ===== -->
         <div class="assistant" id="assistantCard">
             <div class="assistant-head">
                 <div class="assistant-avatar">🤖</div>
@@ -899,7 +899,7 @@
     </div>
 
     <!-- ================================================================
-         EXISTING FUNCTIONALITY — rules-compatible
+         FUNCTIONALITY — reads `treasureCodes`, credits `walletBalance`
          ================================================================ -->
     <script>
         // ================================================================
@@ -987,13 +987,9 @@
         // ================================================================
         // CLAIM TREASURE CODE
         // ----------------------------------------------------------------
-        // RULES-COMPATIBILITY FIX (see note at top of file):
-        //  • `treasureCodes` had no rule → switched to `vouchers`, which
-        //    the rules explicitly allow any signed-in user to read and to
-        //    update (only `used`, `usedBy`, `usedAt`, with usedBy == uid).
-        //  • `walletBalance` is a protected field in the rules and cannot
-        //    be written by the owner. We credit `balance` instead — which
-        //    is NOT in protectedFields() — via an isOwner() update.
+        // Matches the admin dashboard's "Treasure" tab, which creates codes
+        // in the top-level `treasureCodes` collection.
+        // Credits `walletBalance` (the bonus + withdrawal wallet).
         // ================================================================
         claimBtn.addEventListener('click', async () => {
             let code = codeInput.value.trim().toUpperCase();
@@ -1016,8 +1012,8 @@
             }
 
             try {
-                // RULES: /vouchers/{docId} → allow read: if signedIn();
-                const codeQuery = await db.collection('vouchers')
+                // Lookup in `treasureCodes` (matches admin dashboard creation).
+                const codeQuery = await db.collection('treasureCodes')
                     .where('code', '==', code)
                     .limit(1)
                     .get();
@@ -1047,9 +1043,7 @@
                     return;
                 }
 
-                // ✅ Atomically credit the user's `balance` (non-protected field)
-                //    AND mark the voucher as used with usedBy == own UID,
-                //    matching the /vouchers/{docId} update rule exactly.
+                // Atomically credit walletBalance AND mark the code used.
                 await db.runTransaction(async (transaction) => {
                     const userRef = db.collection('users').doc(user.uid);
                     const userSnap = await transaction.get(userRef);
@@ -1057,11 +1051,12 @@
                         throw new Error('User document not found. Please contact support.');
                     }
 
-                    const currentBalance = userSnap.data().balance || 0;
-                    const newBalance = currentBalance + amount;
+                    const currentWallet = Number(userSnap.data().walletBalance || 0);
+                    const newWallet = currentWallet + Number(amount);
 
                     transaction.update(userRef, {
-                        balance: newBalance
+                        walletBalance: newWallet,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
                     transaction.update(codeDoc.ref, {
@@ -1071,7 +1066,6 @@
                     });
                 });
 
-                // RULES: /transactions/{docId} → allow create if owner(userId)
                 await db.collection('transactions').add({
                     userId: user.uid,
                     type: 'treasure',
@@ -1080,7 +1074,7 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                showMessage(`🎉 SUCCESS! You earned ${amount} ZMW! Balance updated. 🎉`, 'success');
+                showMessage(`🎉 SUCCESS! You earned ${amount} ZMW! Wallet Balance updated. 🎉`, 'success');
                 codeInput.value = '';
 
                 setTimeout(() => {
@@ -1123,11 +1117,11 @@
         console.log('✅ Treasure page · Premium forest/emerald design');
         console.log('💎 Back button + treasure code claiming intact');
         console.log('🔑 Codes: 7 characters (A-Z, 0-9)');
-        console.log('📌 Codes are read from /vouchers and update /users.balance (rules-compatible)');
+        console.log('📌 Reads from /treasureCodes, credits /users.walletBalance');
     </script>
 
     <!-- ================================================================
-         TREASURE ASSISTANT — UI LAYER (UNCHANGED)
+         TREASURE ASSISTANT — UI LAYER
          ================================================================ -->
     <script>
         (function () {

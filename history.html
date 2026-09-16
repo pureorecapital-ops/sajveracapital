@@ -32,7 +32,6 @@
             overflow-x: hidden;
         }
 
-        /* ----- FULL SCREEN BLURRED BACKGROUND IMAGE ----- */
         .hero-bg {
             position: fixed;
             top: 0;
@@ -67,7 +66,6 @@
             background: rgba(0, 0, 0, 0.65);
         }
 
-        /* ----- HEADER (DARK GLASS) ----- */
         .header {
             position: fixed;
             top: 0;
@@ -178,7 +176,6 @@
             transform: rotate(-45deg) translate(5px, -5px);
         }
 
-        /* ----- SLIDE MENU PANEL (GLASS) ----- */
         .menu-panel {
             position: fixed;
             top: 0;
@@ -300,7 +297,6 @@
             margin: 0.2rem 0.8rem;
         }
 
-        /* ----- CONTAINER ----- */
         .container {
             max-width: 560px;
             margin: 0 auto;
@@ -309,7 +305,6 @@
             width: 100%;
         }
 
-        /* ----- PAGE HEADER ----- */
         .page-header {
             margin-bottom: 1rem;
             text-align: center;
@@ -331,7 +326,6 @@
             margin-top: 2px;
         }
 
-        /* ----- TABS (GLASS) ----- */
         .tabs {
             display: flex;
             gap: 0.4rem;
@@ -389,7 +383,6 @@
             color: #60a5fa;
         }
 
-        /* ----- TAB CONTENT ----- */
         .tab-content {
             display: none;
             animation: fadeUp 0.3s ease forwards;
@@ -409,7 +402,6 @@
             }
         }
 
-        /* ----- TRANSACTION CARD (GLASS) ----- */
         .tx-card {
             background: rgba(0, 0, 0, 0.45);
             backdrop-filter: blur(24px);
@@ -576,7 +568,6 @@
             border: 1px solid rgba(255, 255, 255, 0.04);
         }
 
-        /* ----- EMPTY STATE (GLASS) ----- */
         .empty-state {
             text-align: center;
             padding: 2.5rem 1rem;
@@ -606,7 +597,6 @@
             margin-top: 0.2rem;
         }
 
-        /* ----- TOAST (GLASS) ----- */
         .toast {
             position: fixed;
             bottom: 100px;
@@ -653,7 +643,6 @@
             }
         }
 
-        /* ----- RESPONSIVE ----- */
         @media (max-width: 500px) {
             .header {
                 padding: 0.6rem 1rem;
@@ -720,10 +709,8 @@
 </head>
 <body>
 
-    <!-- ===== FULL SCREEN BLURRED BACKGROUND ===== -->
     <div class="hero-bg"></div>
 
-    <!-- ===== HEADER ===== -->
     <header class="header">
         <div class="header-left">
             <a href="index.html" class="logo-text">Sajvera<span class="vc">Capital</span></a>
@@ -740,7 +727,6 @@
         </div>
     </header>
 
-    <!-- ===== SLIDE MENU PANEL (GLASS) ===== -->
     <div class="menu-panel" id="menuPanel">
         <button class="close-btn" id="closeMenu">✕</button>
         <div class="panel-header">
@@ -793,16 +779,13 @@
         </button>
     </div>
 
-    <!-- ===== MAIN CONTENT ===== -->
     <main class="container">
 
-        <!-- Page Header -->
         <div class="page-header">
             <h1>📜 <span>History</span></h1>
             <p>View all your transactions</p>
         </div>
 
-        <!-- Tabs -->
         <div class="tabs" id="tabContainer">
             <button class="tab-btn active" data-tab="all">All <span class="badge" id="allBadge">0</span></button>
             <button class="tab-btn" data-tab="deposits">Deposits <span class="badge" id="depositsBadge">0</span></button>
@@ -812,7 +795,6 @@
             <button class="tab-btn" data-tab="savings">Savings <span class="badge" id="savingsBadge">0</span></button>
         </div>
 
-        <!-- Tab Content -->
         <div id="allTab" class="tab-content active">
             <div id="allList"></div>
         </div>
@@ -908,7 +890,6 @@
             return map[type] || type;
         }
 
-        // ── Calculate due date from createdAt + repaymentDays ──
         function calculateDueDate(item) {
             if (item.dueDate) return item.dueDate;
             if (item.repaymentDays && (item.createdAt || item.submittedAt)) {
@@ -923,8 +904,30 @@
             return null;
         }
 
+        // ────────────────────────────────────────────────────────────────
+        // RENDER TRANSACTION
+        //   The `bonus` render category is now used for ALL extra
+        //   transactions coming from `transactions/*` (treasure, income,
+        //   checkin, voucher, purchase, buy plan claim, referral, etc.).
+        //   Spending types (`investment`, `purchase`) are rendered as
+        //   negative; every other type is rendered as positive.
+        // ────────────────────────────────────────────────────────────────
         function renderTransaction(item, type) {
-            var isPositive = (type === 'deposit' || type === 'bonus' || type === 'savings');
+            var isPositive;
+            if (type === 'deposit') isPositive = true;
+            else if (type === 'withdrawal') isPositive = false;
+            else if (type === 'loan') isPositive = true;
+            else if (type === 'savings') {
+                var savType = String(item.type || '').toLowerCase();
+                isPositive = (savType !== 'saving_withdrawal');
+            } else if (type === 'bonus') {
+                var txType = String(item.type || 'bonus').toLowerCase();
+                var spendingTypes = ['investment', 'purchase'];
+                isPositive = spendingTypes.indexOf(txType) === -1;
+            } else {
+                isPositive = true;
+            }
+
             var amountClass = isPositive ? 'positive' : 'negative';
             var sign = isPositive ? '+' : '-';
             var statusClass = getStatusClass(item.status);
@@ -946,7 +949,6 @@
                     <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${formatDateTime(item.createdAt)}</span>
                 `;
             } else if (type === 'loan') {
-                // Use totalRepayment from loan document, or fallback
                 var totalRepay = item.totalRepayment || item.totalRepay || item.repayTotal || (item.amount * 1.2);
                 var dueDate = calculateDueDate(item);
                 var dueDateStr = dueDate ? formatDate(dueDate) : 'N/A';
@@ -960,7 +962,6 @@
                     <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Due: ${dueDateStr}</span>
                     <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${formatDateTime(item.createdAt || item.submittedAt)}</span>
                 `;
-                // Include level if available
                 if (item.loanLevel || item.level) {
                     var levelDisplay = item.loanLevel || item.level;
                     detailsHtml += `
@@ -968,17 +969,20 @@
                     `;
                 }
             } else if (type === 'bonus') {
+                var txLabel = item.description || item.type || 'Activity';
                 detailsHtml = `
-                    <span><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ${item.description || 'Bonus'}</span>
+                    <span><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ${txLabel}</span>
                     <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${formatDateTime(item.createdAt)}</span>
                 `;
             } else if (type === 'savings') {
                 var branchName = item.branch || 'Wealth';
                 var branchLabel = branchName.charAt(0).toUpperCase() + branchName.slice(1);
-                var goalLabel = item.goalName || item.savingReason || 'Savings';
+                var goalLabel = item.goalName || item.reason || item.savingReason || 'Savings';
+                var savType2 = String(item.type || '').toLowerCase();
+                var savKindLabel = savType2 === 'saving_withdrawal' ? 'Withdrawal' : (savType2 === 'saving_deposit' ? 'Deposit' : 'Savings');
                 detailsHtml = `
                     <span><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Branch: <span class="highlight">${branchLabel}</span></span>
-                    <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> ${goalLabel}</span>
+                    <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> ${savKindLabel} · ${goalLabel}</span>
                     <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${formatDateTime(item.submittedAt || item.createdAt)}</span>
                 `;
                 if (item.period) {
@@ -1146,7 +1150,7 @@
         function renderBonuses() {
             var container = document.getElementById('bonusesList');
             if (!allData.bonuses.length) {
-                container.innerHTML = renderEmpty('No bonuses');
+                container.innerHTML = renderEmpty('No bonus or activity records');
                 return;
             }
             var html = '';
@@ -1231,7 +1235,6 @@
                 snapshot.forEach(function(doc) {
                     var data = doc.data();
                     data.id = doc.id;
-                    // Ensure status is set
                     if (!data.status) data.status = 'pending';
                     docs.push(data);
                 });
@@ -1245,16 +1248,25 @@
             });
         }
 
+        // ────────────────────────────────────────────────────────────────
+        // ACTIVITY / BONUS LISTENER
+        // Fetch ALL transactions for this user (bonus, treasure,
+        // daily_income, buy_plan_claim, voucher, referral_bonus,
+        // investment, purchase, refund, lucky_wheel, checkin, etc.),
+        // EXCEPT deposit/withdrawal companion records (those already
+        // appear from the `deposits` and `withdrawals` collections and
+        // would duplicate here).
+        // ────────────────────────────────────────────────────────────────
         function listenBonuses(userId) {
             if (unsubs.bonuses) unsubs.bonuses();
-            var q = db.collection('transactions')
-                .where('userId', '==', userId)
-                .where('type', '==', 'bonus');
+            var q = db.collection('transactions').where('userId', '==', userId);
             unsubs.bonuses = q.onSnapshot(function(snapshot) {
                 var docs = [];
                 snapshot.forEach(function(doc) {
                     var data = doc.data();
                     data.id = doc.id;
+                    var t = String(data.type || '').toLowerCase();
+                    if (t === 'deposit' || t === 'withdrawal') return; // skip companions
                     if (!data.status) data.status = 'completed';
                     docs.push(data);
                 });
@@ -1263,15 +1275,21 @@
                 renderAll();
                 updateBadges();
             }, function(err) {
-                console.error('Bonus listener error:', err);
-                document.getElementById('bonusesList').innerHTML = renderEmpty('Error loading bonuses');
+                console.error('Transaction listener error:', err);
+                document.getElementById('bonusesList').innerHTML = renderEmpty('Error loading transactions');
             });
         }
 
+        // ────────────────────────────────────────────────────────────────
+        // SAVINGS LISTENER — reads from `savingsTransactions` (top-level)
+        // where each record is a savings deposit or withdrawal submitted
+        // from the user's saving branches. This matches where the admin
+        // dashboard approves savings and where the profile reports from.
+        // ────────────────────────────────────────────────────────────────
         function listenSavings(userId) {
             if (unsubs.savings) unsubs.savings();
-            var savingsRef = db.collection('users').doc(userId).collection('savings');
-            unsubs.savings = savingsRef.onSnapshot(function(snapshot) {
+            var q = db.collection('savingsTransactions').where('userId', '==', userId);
+            unsubs.savings = q.onSnapshot(function(snapshot) {
                 var docs = [];
                 snapshot.forEach(function(doc) {
                     var data = doc.data();
@@ -1391,10 +1409,9 @@
         });
 
         console.log('✅ history.html · Sajvera Capital · Blue glassmorphism design');
-        console.log('📜 All transactions including deposits, withdrawals, loans, bonuses, savings');
-        console.log('💰 Loans tab now displays: branch, provider, total repayment, due date, level');
-        console.log('✅ Loan status: pending, approved, rejected, active, paid, overdue');
-        console.log('⬅️ Back button to dashboard · No bottom nav');
+        console.log('📜 Records: deposits, withdrawals, loans, all transactions, savings');
+        console.log('✅ Activity tab now shows treasure, check-in, income, voucher, purchase, refund, etc.');
+        console.log('✅ Savings now reads top-level `savingsTransactions` collection.');
     </script>
 </body>
 </html>

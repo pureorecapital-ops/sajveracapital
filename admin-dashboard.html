@@ -68,7 +68,6 @@
             flex-direction: column;
         }
 
-        /* Subtle background orbs */
         body::before {
             content: '';
             position: fixed;
@@ -94,7 +93,6 @@
             z-index: 0;
         }
 
-        /* Scrollbar */
         ::-webkit-scrollbar {
             width: 5px;
             height: 5px;
@@ -255,7 +253,7 @@
         }
 
         /* ================================================================
-           TAB BAR (Horizontal, scrollable)
+           TAB BAR
            ================================================================ */
         .tab-bar-wrap {
             background: rgba(13, 11, 26, 0.5);
@@ -1384,40 +1382,17 @@
         }
 
         /* Utilities */
-        .mt-8 {
-            margin-top: 8px;
-        }
-        .mt-16 {
-            margin-top: 16px;
-        }
-        .mb-16 {
-            margin-bottom: 16px;
-        }
-        .flex {
-            display: flex;
-        }
-        .flex-center {
-            align-items: center;
-            justify-content: center;
-        }
-        .gap-8 {
-            gap: 8px;
-        }
-        .gap-12 {
-            gap: 12px;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .text-muted {
-            color: var(--text-muted);
-        }
-        .w-full {
-            width: 100%;
-        }
-        .hidden {
-            display: none !important;
-        }
+        .mt-8 { margin-top: 8px; }
+        .mt-16 { margin-top: 16px; }
+        .mb-16 { margin-bottom: 16px; }
+        .flex { display: flex; }
+        .flex-center { align-items: center; justify-content: center; }
+        .gap-8 { gap: 8px; }
+        .gap-12 { gap: 12px; }
+        .text-center { text-align: center; }
+        .text-muted { color: var(--text-muted); }
+        .w-full { width: 100%; }
+        .hidden { display: none !important; }
         .status-dot {
             display: inline-block;
             width: 8px;
@@ -1425,20 +1400,11 @@
             border-radius: 50%;
             margin-right: 4px;
         }
-        .status-dot.pending {
-            background: var(--accent-3);
-        }
-        .status-dot.approved {
-            background: var(--accent-2);
-        }
-        .status-dot.rejected {
-            background: #f87171;
-        }
-        .status-dot.matured {
-            background: var(--accent-1);
-        }
+        .status-dot.pending { background: var(--accent-3); }
+        .status-dot.approved { background: var(--accent-2); }
+        .status-dot.rejected { background: #f87171; }
+        .status-dot.matured { background: var(--accent-1); }
 
-        /* Reset Stats button special style */
         .btn-reset-stats {
             background: rgba(239, 68, 68, 0.08);
             border: 1px solid rgba(239, 68, 68, 0.15);
@@ -1453,9 +1419,6 @@
 </head>
 <body>
 
-    <!-- ================================================================
-    HEADER
-    ================================================================ -->
     <header class="header">
         <div class="header-left">
             <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
@@ -1479,18 +1442,10 @@
         </div>
     </header>
 
-    <!-- ================================================================
-    HORIZONTAL TAB BAR
-    ================================================================ -->
     <div class="tab-bar-wrap">
-        <div class="tab-bar" id="tabBar">
-            <!-- Tabs rendered by JavaScript -->
-        </div>
+        <div class="tab-bar" id="tabBar"></div>
     </div>
 
-    <!-- ================================================================
-    PAGE CONTENT
-    ================================================================ -->
     <div class="page-content" id="pageContent">
 
         <!-- ===== DASHBOARD ===== -->
@@ -1521,7 +1476,6 @@
                 <button class="btn-qa" data-action="createPlan"><i class="fas fa-plus-circle"></i> New Plan</button>
                 <button class="btn-qa" data-action="goSavings"><i class="fas fa-piggy-bank"></i> Savings</button>
                 <button class="btn-qa" data-action="goJobs"><i class="fas fa-briefcase"></i> Jobs</button>
-                <!-- Reset Stats Button -->
                 <button class="btn-qa btn-reset-stats" id="resetStatsBtn"><i class="fas fa-undo-alt"></i> Reset Deposit/Withdraw Stats</button>
             </div>
 
@@ -1797,9 +1751,6 @@
 
     </div><!-- /page-content -->
 
-    <!-- ================================================================
-    MODAL
-    ================================================================ -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal" id="modalContent">
             <div class="modal-header">
@@ -1811,9 +1762,6 @@
         </div>
     </div>
 
-    <!-- ================================================================
-    CONFIRM DIALOG
-    ================================================================ -->
     <div class="modal-overlay confirm-dialog" id="confirmOverlay">
         <div class="modal">
             <div class="confirm-icon"><i class="fas fa-triangle-exclamation"></i></div>
@@ -1826,14 +1774,8 @@
         </div>
     </div>
 
-    <!-- ================================================================
-    TOAST CONTAINER
-    ================================================================ -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- ================================================================
-    JAVASCRIPT — COMPLETE APPLICATION
-    ================================================================ -->
     <script>
         // ================================================================
         // 1. FIREBASE CONFIGURATION
@@ -2134,7 +2076,6 @@
             if (loaders[tabId]) loaders[tabId]();
         }
 
-        // Quick action buttons
         document.querySelectorAll('.btn-qa[data-action]').forEach(btn => {
             btn.onclick = () => {
                 const action = btn.dataset.action;
@@ -2308,7 +2249,7 @@
                     <td><strong>${escapeHtml(u.fullName || '—')}</strong></td>
                     <td>${escapeHtml(u.email || '—')}</td>
                     <td>${escapeHtml(u.phone || '—')}</td>
-                    <td>${formatMoney(u.balance)}</td>
+                    <td>${formatMoney(u.depositBalance)}</td>
                     <td>${getStatusBadge(u.role || 'user')}</td>
                     <td>${isBlocked ? '<span class="badge badge-danger">Blocked</span>' : '<span class="badge badge-success">Active</span>'}</td>
                     <td>${formatDate(u.createdAt)}</td>
@@ -2335,29 +2276,33 @@
                 if (!doc.exists) { showToast('User not found.', 'error'); return; }
                 const u = doc.data();
                 const html =
-                    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.9rem;"><div><strong>Full Name</strong><br>${escapeHtml(u.fullName || '—')}</div><div><strong>Email</strong><br>${escapeHtml(u.email || '—')}</div><div><strong>Phone</strong><br>${escapeHtml(u.phone || '—')}</div><div><strong>Role</strong><br>${escapeHtml(u.role || 'user')}</div><div><strong>Balance</strong><br>${formatMoney(u.balance)} ZMW</div><div><strong>Wallet Balance</strong><br>${formatMoney(u.walletBalance)} ZMW</div><div><strong>Deposit Balance</strong><br>${formatMoney(u.depositBalance)} ZMW</div><div><strong>Activity Balance</strong><br>${formatMoney(u.activityBalance)} ZMW</div><div><strong>Referral Code</strong><br>${escapeHtml(u.referralCode || '—')}</div><div><strong>Referred By</strong><br>${escapeHtml(u.referredBy || '—')}</div><div><strong>Status</strong><br>${u.isBlocked ? 'Blocked' : 'Active'}</div><div><strong>Created</strong><br>${formatDateTime(u.createdAt)}</div></div>`;
+                    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.9rem;"><div><strong>Full Name</strong><br>${escapeHtml(u.fullName || '—')}</div><div><strong>Email</strong><br>${escapeHtml(u.email || '—')}</div><div><strong>Phone</strong><br>${escapeHtml(u.phone || '—')}</div><div><strong>Role</strong><br>${escapeHtml(u.role || 'user')}</div><div><strong>Wallet Balance</strong><br>${formatMoney(u.walletBalance)} ZMW</div><div><strong>Deposit Balance</strong><br>${formatMoney(u.depositBalance)} ZMW</div><div><strong>Activity Balance</strong><br>${formatMoney(u.activityBalance)} ZMW</div><div><strong>Legacy Balance</strong><br>${formatMoney(u.balance)} ZMW</div><div><strong>Referral Code</strong><br>${escapeHtml(u.referralCode || '—')}</div><div><strong>Referred By</strong><br>${escapeHtml(u.referredBy || '—')}</div><div><strong>Status</strong><br>${u.isBlocked ? 'Blocked' : 'Active'}</div><div><strong>Created</strong><br>${formatDateTime(u.createdAt)}</div></div>`;
                 openModal('User Details', html, '<button class="btn btn-outline" onclick="closeModal()">Close</button>');
             } catch (err) { showToast('Error loading user details.', 'error');
                 console.error(err); }
         };
 
-        // ─── EDIT USER (with Deposit & Withdraw balance controls) ───
+        // ─── EDIT USER ───
+        // Wallet Balance (used for withdrawals + bonuses) maps to `walletBalance`.
+        // Legacy `balance` field is zeroed on save to normalize old data.
         window.editUser = function(uid) {
             const u = allUsers.find(x => x.id === uid);
             if (!u) { showToast('User not found.', 'error'); return; }
+
+            const walletVal = Number(u.walletBalance !== undefined ? u.walletBalance : (u.balance || 0)) || 0;
 
             const html = `
                 <div class="form-group"><label>Full Name</label><input class="form-control" id="editUName" value="${escapeHtml(u.fullName || '')}" /></div>
                 <div class="form-group"><label>Email</label><input class="form-control" id="editUEmail" value="${escapeHtml(u.email || '')}" /></div>
                 <div class="form-group"><label>Phone</label><input class="form-control" id="editUPhone" value="${escapeHtml(u.phone || '')}" /></div>
                 <div class="form-row">
-                    <div class="form-group"><label>Withdraw Balance</label>
+                    <div class="form-group"><label>Wallet Balance (Withdraw + Bonuses)</label>
                         <div style="display:flex;gap:8px;align-items:center;">
-                            <input class="form-control" id="editUBalance" type="number" step="0.01" value="${u.balance || 0}" />
-                            <button class="btn btn-danger btn-sm" id="clearWithdrawBalanceBtn" style="flex-shrink:0;">Clear</button>
+                            <input class="form-control" id="editWalletBalance" type="number" step="0.01" value="${walletVal}" />
+                            <button class="btn btn-danger btn-sm" id="clearWalletBalanceBtn" style="flex-shrink:0;">Clear</button>
                         </div>
                     </div>
-                    <div class="form-group"><label>Deposit Balance</label>
+                    <div class="form-group"><label>Deposit Balance (For Buying Plans)</label>
                         <div style="display:flex;gap:8px;align-items:center;">
                             <input class="form-control" id="editDepositBalance" type="number" step="0.01" value="${u.depositBalance || 0}" />
                             <button class="btn btn-danger btn-sm" id="clearDepositBalanceBtn" style="flex-shrink:0;">Clear</button>
@@ -2386,8 +2331,8 @@
 
             openModal('Edit User', html, footer);
 
-            document.getElementById('clearWithdrawBalanceBtn').onclick = function() {
-                document.getElementById('editUBalance').value = '0';
+            document.getElementById('clearWalletBalanceBtn').onclick = function() {
+                document.getElementById('editWalletBalance').value = '0';
             };
             document.getElementById('clearDepositBalanceBtn').onclick = function() {
                 document.getElementById('editDepositBalance').value = '0';
@@ -2414,7 +2359,7 @@
                     const fullName = document.getElementById('editUName').value.trim();
                     const email = document.getElementById('editUEmail').value.trim();
                     const phone = document.getElementById('editUPhone').value.trim();
-                    const balance = parseFloat(document.getElementById('editUBalance').value) || 0;
+                    const walletBalance = parseFloat(document.getElementById('editWalletBalance').value) || 0;
                     const depositBalance = parseFloat(document.getElementById('editDepositBalance').value) || 0;
                     const role = document.getElementById('editURole').value;
                     const isBlocked = document.getElementById('editUBlocked').value === 'true';
@@ -2422,7 +2367,8 @@
                         fullName,
                         email,
                         phone,
-                        balance,
+                        walletBalance,
+                        balance: 0,          // normalize legacy field so profile Wallet card shows exactly walletBalance
                         depositBalance,
                         role,
                         isBlocked,
@@ -2584,8 +2530,9 @@
         document.getElementById('depositStatusFilter').addEventListener('change', () => renderDeposits(allDeposits));
         document.getElementById('refreshDepositsBtn').onclick = loadDeposits;
 
+        // Approve deposit → credit user's depositBalance (money for buying plans)
         window.approveDeposit = async function(id) {
-            if (!await showConfirm('Approve this deposit?', 'The user\'s balance will be credited.')) return;
+            if (!await showConfirm('Approve this deposit?', 'The user\'s deposit balance will be credited.')) return;
             try {
                 const doc = await db.collection('deposits').doc(id).get();
                 if (!doc.exists) { showToast('Deposit not found.', 'error'); return; }
@@ -2683,7 +2630,7 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                showToast('✅ Deposit approved. Balance credited.', 'success');
+                showToast('✅ Deposit approved. Deposit Balance credited.', 'success');
                 loadDeposits();
                 loadDashboardStats();
             } catch (err) { console.error('Approve deposit error:', err);
@@ -2736,6 +2683,12 @@
 
         // ================================================================
         // 14. WITHDRAWALS
+        // ----------------------------------------------------------------
+        // IMPORTANT: withdraw.html already deducts the amount from the user's
+        // `walletBalance` AND `balance` at the moment the user submits the
+        // request. So approve/reject here only needs to update the status.
+        //   • Approve → mark as approved. No balance change.
+        //   • Reject  → refund walletBalance + balance back, then mark rejected.
         // ================================================================
         let allWithdrawals = [];
 
@@ -2795,8 +2748,9 @@
         document.getElementById('withdrawalStatusFilter').addEventListener('change', () => renderWithdrawals(allWithdrawals));
         document.getElementById('refreshWithdrawalsBtn').onclick = loadWithdrawals;
 
+        // FIXED: no longer deducts from the user (withdraw.html already did that on submit).
         window.approveWithdrawal = async function(id) {
-            if (!await showConfirm('Approve this withdrawal?', 'The amount will be deducted from user balance.')) return;
+            if (!await showConfirm('Approve this withdrawal?', 'The user has already had the amount deducted. Approval just releases the funds.')) return;
             try {
                 const doc = await db.collection('withdrawals').doc(id).get();
                 if (!doc.exists) { showToast('Withdrawal not found.', 'error'); return; }
@@ -2823,28 +2777,20 @@
                 }
                 if (errors.length > 0) { showToast('❌ ' + errors.join('; '), 'error'); return; }
 
-                const amount = Number(data.amount || 0);
-                await db.runTransaction(async (transaction) => {
-                    const userRef = db.collection('users').doc(userId);
-                    const userDoc = await transaction.get(userRef);
-                    if (!userDoc.exists) throw new Error('User not found');
-                    const currentBalance = Number(userDoc.data().balance || 0);
-                    if (currentBalance < amount) throw new Error('Insufficient balance');
-                    transaction.update(userRef, { balance: currentBalance - amount, updatedAt: firebase.firestore
-                            .FieldValue.serverTimestamp() });
-                    transaction.update(db.collection('withdrawals').doc(id), {
-                        status: 'approved',
-                        approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        approvedBy: currentAdmin ? currentAdmin.uid : 'admin'
-                    });
+                await db.collection('withdrawals').doc(id).update({
+                    status: 'approved',
+                    approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    approvedBy: currentAdmin ? currentAdmin.uid : 'admin'
                 });
+
                 await db.collection('transactions').add({
                     userId: userId,
                     type: 'withdrawal',
-                    amount: amount,
-                    description: `Withdrawal of K${formatMoney(amount)} approved (admin: ${currentAdmin?.email || 'admin'})`,
+                    amount: Number(data.amount || 0),
+                    description: `Withdrawal of K${formatMoney(data.amount)} approved (admin: ${currentAdmin?.email || 'admin'})`,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
+
                 showToast('✅ Withdrawal approved.', 'success');
                 loadWithdrawals();
                 loadDashboardStats();
@@ -2852,8 +2798,9 @@
                 showToast('Failed to approve withdrawal: ' + err.message, 'error'); }
         };
 
+        // FIXED: refunds both walletBalance and balance (matching how withdraw.html deducted on submit).
         window.rejectWithdrawal = async function(id) {
-            if (!await showConfirm('Reject this withdrawal?', 'The user will not receive funds.')) return;
+            if (!await showConfirm('Reject this withdrawal?', 'The amount will be refunded to the user.')) return;
             try {
                 const doc = await db.collection('withdrawals').doc(id).get();
                 if (!doc.exists) { showToast('Withdrawal not found.', 'error'); return; }
@@ -2865,9 +2812,13 @@
                     const userRef = db.collection('users').doc(userId);
                     const userDoc = await transaction.get(userRef);
                     if (!userDoc.exists) throw new Error('User not found');
+                    const currentWallet = Number(userDoc.data().walletBalance || 0);
                     const currentBalance = Number(userDoc.data().balance || 0);
-                    transaction.update(userRef, { balance: currentBalance + amount, updatedAt: firebase.firestore
-                            .FieldValue.serverTimestamp() });
+                    transaction.update(userRef, {
+                        walletBalance: currentWallet + amount,
+                        balance: currentBalance + amount,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                     transaction.update(db.collection('withdrawals').doc(id), {
                         status: 'rejected',
                         rejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -2976,7 +2927,7 @@
         document.getElementById('refreshInvestmentsBtn').onclick = loadInvestments;
 
         // ================================================================
-        // 16. MARKETPLACE PLANS — FIXED: Buy vs Invest logic
+        // 16. MARKETPLACE PLANS
         // ================================================================
         let allPlans = [];
 
@@ -3035,7 +2986,6 @@
                     '<div class="empty-state"><i class="fas fa-store"></i><p>No marketplace plans created yet.</p></div>';
                 return;
             }
-            // Show plan details in table: for Invest show Daily Return + Earning Days, for Buy show Profit + Duration
             let html =
                 `<table><thead><tr><th>Plan</th><th>Price</th><th>Type</th><th>Return / Profit</th><th>Days / Duration</th><th>Total Profit</th><th>Status</th><th>Visibility</th><th>Actions</th></tr></thead><tbody>`;
             plans.forEach(p => {
@@ -3043,7 +2993,6 @@
                 const visible = p.showOnMarketplace === true;
                 const planType = p.planType || 'invest';
                 const isInvest = (planType === 'invest' || planType === 'Daily');
-                // Display values
                 const returnOrProfit = isInvest ? p.dailyReturn : p.totalProfit;
                 const daysOrDuration = isInvest ? p.earningDays : p.earningDays;
                 const totalProfit = isInvest ? (p.dailyReturn || 0) * (p.earningDays || 0) : (p.totalProfit || 0);
@@ -3074,7 +3023,6 @@
 
         function openCreatePlanForm() { showPlanForm('Create Marketplace Plan', null); }
 
-        // ─── showPlanForm — FIXED: Buy plan shows Profit + Duration, Invest shows Daily Return + Days ───
         function showPlanForm(title, planData) {
             const isEdit = !!planData;
             const p = planData || {};
@@ -3097,7 +3045,6 @@
                     <div class="image-preview-container" id="mpImagePreview">${p.imageUrl ? `<img src="${escapeHtml(p.imageUrl)}" alt="Plan image" onerror="this.parentElement.innerHTML='<div class=\\'error-preview\\'><i class=\\'fas fa-exclamation-circle\\'></i> Invalid image URL</div>'" />` : ''}</div>
                 </div>
                 <div class="form-group"><label>Investment Price (ZMW) *</label><input class="form-control" id="mpPrice" type="number" step="0.01" value="${p.investmentPrice || ''}" placeholder="100" /></div>
-                <!-- INVEST FIELDS -->
                 <div id="mpInvestFields" style="${isInvest ? '' : 'display:none;'}">
                     <div class="form-row">
                         <div class="form-group"><label>Daily Return (ZMW) *</label><input class="form-control" id="mpDailyReturn" type="number" step="0.01" value="${p.dailyReturn || ''}" placeholder="10" /></div>
@@ -3108,7 +3055,6 @@
                         <div class="calc-item"><span class="calc-label">Total Payout</span><span class="calc-value" id="mpCalcPayout">0.00 ZMW</span></div>
                     </div>
                 </div>
-                <!-- BUY FIELDS -->
                 <div id="mpBuyFields" style="${isInvest ? 'display:none;' : ''}">
                     <div class="form-row">
                         <div class="form-group"><label>Profit (ZMW) *</label><input class="form-control" id="mpProfit" type="number" step="0.01" value="${p.totalProfit || ''}" placeholder="100" /></div>
@@ -3145,7 +3091,6 @@
 
             openModal(title, html, footer);
 
-            // ─── Setup toggle ───
             const investBtn = document.getElementById('mpTypeInvestBtn');
             const buyBtn = document.getElementById('mpTypeBuyBtn');
             const planTypeHidden = document.getElementById('mpPlanTypeHidden');
@@ -3164,7 +3109,6 @@
             investBtn.onclick = () => setPlanType('invest');
             buyBtn.onclick = () => setPlanType('buy');
 
-            // ─── Image preview ───
             const imgUrlInput = document.getElementById('mpImageUrl');
             const previewContainer = document.getElementById('mpImagePreview');
             imgUrlInput.oninput = function() {
@@ -3175,7 +3119,6 @@
                 } else previewContainer.innerHTML = '';
             };
 
-            // ─── Invest calculator ───
             const dailyReturnInput = document.getElementById('mpDailyReturn');
             const earningDaysInput = document.getElementById('mpEarningDays');
             const calcProfit = document.getElementById('mpCalcProfit');
@@ -3192,7 +3135,6 @@
             dailyReturnInput.oninput = updateInvestCalc;
             earningDaysInput.oninput = updateInvestCalc;
 
-            // ─── Buy calculator ───
             const profitInput = document.getElementById('mpProfit');
             const durationInput = document.getElementById('mpDuration');
             const buyCalcProfit = document.getElementById('mpBuyCalcProfit');
@@ -3207,13 +3149,11 @@
             profitInput.oninput = updateBuyCalc;
             durationInput.oninput = updateBuyCalc;
 
-            // ─── Price also affects calcs ───
             document.getElementById('mpPrice').oninput = function() {
                 if (planTypeHidden.value === 'invest') updateInvestCalc();
                 else updateBuyCalc();
             };
 
-            // ─── Populate form if editing ───
             if (planData) {
                 document.getElementById('mpName').value = planData.planName || '';
                 document.getElementById('mpImageUrl').value = planData.imageUrl || '';
@@ -3241,12 +3181,10 @@
                 updateInvestCalc();
             }
 
-            // ─── Save handlers ───
             document.getElementById('mpSaveDraftBtn').onclick = async function() { await savePlan(false); };
             document.getElementById('mpPublishBtn').onclick = async function() { await savePlan(true); };
         }
 
-        // ─── savePlan ───
         async function savePlan(publish) {
             const btn = publish ? document.getElementById('mpPublishBtn') : document.getElementById('mpSaveDraftBtn');
             const originalText = btn.innerHTML;
@@ -3255,7 +3193,7 @@
 
             try {
                 const id = document.getElementById('mpEditId').value;
-                const planType = document.getElementById('mpPlanTypeHidden').value; // 'invest' or 'buy'
+                const planType = document.getElementById('mpPlanTypeHidden').value;
                 const data = {
                     planName: document.getElementById('mpName').value.trim(),
                     planType: planType,
@@ -3274,8 +3212,8 @@
                     data.earningDays = parseInt(document.getElementById('mpEarningDays').value) || 0;
                     data.totalProfit = data.dailyReturn * data.earningDays;
                     data.totalPayout = data.investmentPrice + data.totalProfit;
-                } else { // buy
-                    data.dailyReturn = 0; // not used for buy
+                } else {
+                    data.dailyReturn = 0;
                     data.earningDays = parseInt(document.getElementById('mpDuration').value) || 0;
                     data.totalProfit = parseFloat(document.getElementById('mpProfit').value) || 0;
                     data.totalPayout = data.investmentPrice + data.totalProfit;
@@ -4384,8 +4322,6 @@
                     approvedBy: currentAdmin ? currentAdmin.uid : 'admin'
                 });
 
-                // FIX: Rules define `savings/{userId}` as a top-level doc (doc ID == userId).
-                // Previously code used `users/{userId}/savings` subcollection, which has no rule.
                 const savingsRef = db.collection('savings').doc(userId);
                 const savingsDoc = await savingsRef.get();
                 if (savingsDoc.exists) {
@@ -4453,7 +4389,6 @@
                     approvedBy: currentAdmin ? currentAdmin.uid : 'admin'
                 });
 
-                // FIX: Rules define `savings/{userId}` as a top-level doc (doc ID == userId).
                 const savingsRef = db.collection('savings').doc(userId);
                 const savingsDoc = await savingsRef.get();
                 if (!savingsDoc.exists) throw new Error('User has no savings balance.');
@@ -4545,7 +4480,7 @@
         }
 
         // ================================================================
-        // 26. JOBS  — FIXED: rules define `applications`, not `jobApplications`
+        // 26. JOBS (uses `applications` collection)
         // ================================================================
         let allJobs = [];
 
@@ -4712,7 +4647,6 @@
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;"></div> Resetting...';
             try {
-                // Delete all deposit records
                 const depositsSnap = await db.collection('deposits').get();
                 const batchSize = 500;
                 let count = 0;
@@ -4720,11 +4654,9 @@
                     await db.collection('deposits').doc(doc.id).delete();
                     count++;
                     if (count % batchSize === 0) {
-                        // Small delay to avoid hammering Firestore
                         await new Promise(resolve => setTimeout(resolve, 100));
                     }
                 }
-                // Delete all withdrawal records
                 const withdrawalsSnap = await db.collection('withdrawals').get();
                 for (const doc of withdrawalsSnap.docs) {
                     await db.collection('withdrawals').doc(doc.id).delete();
@@ -4733,7 +4665,6 @@
                         await new Promise(resolve => setTimeout(resolve, 100));
                     }
                 }
-                // Delete all transactions related to deposits/withdrawals (optional)
                 const txSnap = await db.collection('transactions').where('type', 'in', ['deposit', 'withdrawal',
                     'refund'
                 ]).get();
@@ -4768,9 +4699,11 @@
                 loadSettings();
                 loadAppearance();
                 loadRecentActivities();
-                console.log('✅ Sajvera Admin Dashboard initialized with rules-compatibility fixes.');
-                console.log('📌 Savings now uses top-level `savings/{userId}` (per rules).');
-                console.log('📌 Job applications now uses `applications` collection (per rules).');
+                console.log('✅ Sajvera Admin Dashboard initialized.');
+                console.log('📌 Deposit approval credits `depositBalance`.');
+                console.log('📌 Withdrawal approval does NOT deduct (withdraw.html deducted on submit).');
+                console.log('📌 Withdrawal rejection refunds `walletBalance` + `balance`.');
+                console.log('📌 Edit User writes `walletBalance` and normalizes legacy `balance` to 0.');
             } catch (err) { console.error('Initialization error:', err); }
         }
 
