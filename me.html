@@ -1414,52 +1414,40 @@
         window.addEventListener('beforeunload', function() { if (blockUnsub) blockUnsub(); });
 
         // ================================================================
-        // SAVINGS DATA LISTENER — reads top-level savings/{uid}
+        // SAVINGS DATA LISTENER
         // ================================================================
         var savingsUnsub = null;
 
         function watchSavings(userId) {
             if (savingsUnsub) savingsUnsub();
 
-            savingsUnsub = db.collection('savings').doc(userId)
-                .onSnapshot(function(doc) {
-                    var approved = { wealth: 0, reserve: 0, growth: 0 };
+            savingsUnsub = db.collection('savingsTransactions')
+                .where('userId', '==', userId)
+                .onSnapshot(function(snap) {
+                    var available = { wealth: 0, reserve: 0, growth: 0 };
                     var pending = { wealth: 0, reserve: 0, growth: 0 };
 
-                    if (doc.exists) {
-                        var data = doc.data() || {};
-                        var branch = data.branch || 'wealth';
+                    snap.forEach(function(doc) {
+                        var d = doc.data();
+                        var branch = d.branch || 'wealth';
+                        if (available[branch] === undefined) return;
 
-                        // Case 1: single-doc shape (one branch per user)
-                        if (typeof data.balance === 'number') {
-                            if (approved[branch] !== undefined) {
-                                approved[branch] = Number(data.balance) || 0;
-                            }
-                            if (typeof data.pendingBalance === 'number' && pending[branch] !== undefined) {
-                                pending[branch] = Number(data.pendingBalance) || 0;
-                            }
+                        var amt = Number(d.amount || 0);
+                        if (d.type === 'saving_deposit' && d.status === 'approved') {
+                            available[branch] += amt;
+                        } else if (d.type === 'saving_withdrawal' && d.status === 'approved') {
+                            available[branch] -= amt;
+                        } else if (d.type === 'saving_withdrawal' && d.status === 'pending') {
+                            available[branch] -= amt;
+                            pending[branch] += amt;
                         }
+                    });
 
-                        // Case 2: per-branch fields on the same doc
-                        ['wealth', 'reserve', 'growth'].forEach(function(b) {
-                            if (typeof data[b] === 'number') approved[b] = Number(data[b]) || 0;
-                            if (typeof data[b + 'Pending'] === 'number') pending[b] = Number(data[b + 'Pending']) || 0;
-                        });
+                    ['wealth', 'reserve', 'growth'].forEach(function(b) {
+                        if (available[b] < 0) available[b] = 0;
+                    });
 
-                        // Case 3: explicit maps
-                        if (data.approved && typeof data.approved === 'object') {
-                            ['wealth', 'reserve', 'growth'].forEach(function(b) {
-                                if (typeof data.approved[b] === 'number') approved[b] = Number(data.approved[b]) || 0;
-                            });
-                        }
-                        if (data.pending && typeof data.pending === 'object') {
-                            ['wealth', 'reserve', 'growth'].forEach(function(b) {
-                                if (typeof data.pending[b] === 'number') pending[b] = Number(data.pending[b]) || 0;
-                            });
-                        }
-                    }
-
-                    updateSavingsUI(approved, pending);
+                    updateSavingsUI(available, pending);
                 }, function(err) {
                     console.warn('Savings listener error:', err);
                     updateSavingsUI({ wealth: 0, reserve: 0, growth: 0 }, { wealth: 0, reserve: 0, growth: 0 });
@@ -1515,27 +1503,37 @@
                         document.getElementById('avatarLetter').textContent = firstLetter;
 
                         // ----------------------------------------------------
-                        // BALANCE READING — FIXED
-                        // ----------------------------------------------------
-                        // walletBalance and balance are the SAME pot of money,
-                        // mirrored across two fields for legacy compatibility.
-                        // Taking Math.max(...) avoids double-counting after the
-                        // first withdrawal (when both fields hold the same value).
-                        // This matches the logic used in withdraw.html.
+                        // BALANCE READING & SELF-HEALING FIX
                         // ----------------------------------------------------
                         var deposit     = Number(data.depositBalance)  || 0;
-                        var wallet      = Number(data.walletBalance)   || 0;
+                        var wallet      = Number(data.walletBalance)   || 0; 
                         var mainBalance = Number(data.balance)         || 0;
                         var activity    = Number(data.activityBalance) || 0;
 
-                        var displayWallet = Math.max(wallet, mainBalance);
-                        var total = deposit + displayWallet + activity;
+                        // SELF-HEALING: If the old balance field is higher than the wallet balance,
+                        // automatically sync them in the database. This fixes the 0.40 vs 7.30 issue
+                        // without needing manual Firebase Console edits.
+                        if (mainBalance > wallet) {
+                            console.log("🔄 Auto-syncing: balance > walletBalance. Fixing database...");
+                            db.collection('users').doc(user.uid).update({
+                                walletBalance: mainBalance
+                            }).then(function() {
+                                console.log("✅ Database auto-synced to:", mainBalance);
+                            }).catch(function(err) {
+                                console.warn("⚠️ Auto-sync failed:", err);
+                            });
+                            // Immediately use the correct value for the UI so it shows 7.30 right away
+                            wallet = mainBalance;
+                        }
+
+                        var displayWallet = wallet; 
+                        var total = deposit + displayWallet;
 
                         document.getElementById('depositBalance').textContent = deposit.toFixed(2);
                         document.getElementById('walletBalance').textContent = displayWallet.toFixed(2);
                         document.getElementById('totalBalance').textContent = total.toFixed(2);
 
-                        // Debug helper — inspect the exact live user doc in DevTools.
+                        // Debug helper
                         console.log('[Profile] user doc updated:', {
                             depositBalance: data.depositBalance,
                             walletBalance: data.walletBalance,
@@ -1741,8 +1739,7 @@
         });
 
         console.log('✅ Profile page · Sajvera Capital · Blue blur theme');
-        console.log('🔵 Balance fix: wallet = max(walletBalance, balance) — no double-counting');
-        console.log('🔵 Savings fix: reads top-level savings/{uid} (matches Firestore rules)');
+        console.log('🩹 Self-healing enabled: auto-syncs walletBalance if out of date.');
     </script>
 
 </body>
