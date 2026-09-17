@@ -1414,46 +1414,52 @@
         window.addEventListener('beforeunload', function() { if (blockUnsub) blockUnsub(); });
 
         // ================================================================
-        // SAVINGS DATA LISTENER
-        // ================================================================
-        // FIXED: Reads from 'savingsTransactions' and dynamically calculates
-        // the available balance for each branch. This perfectly matches the
-        // logic used in withdraw.html so the numbers are consistent.
+        // SAVINGS DATA LISTENER — reads top-level savings/{uid}
         // ================================================================
         var savingsUnsub = null;
 
         function watchSavings(userId) {
             if (savingsUnsub) savingsUnsub();
 
-            savingsUnsub = db.collection('savingsTransactions')
-                .where('userId', '==', userId)
-                .onSnapshot(function(snap) {
-                    var available = { wealth: 0, reserve: 0, growth: 0 };
+            savingsUnsub = db.collection('savings').doc(userId)
+                .onSnapshot(function(doc) {
+                    var approved = { wealth: 0, reserve: 0, growth: 0 };
                     var pending = { wealth: 0, reserve: 0, growth: 0 };
 
-                    snap.forEach(function(doc) {
-                        var d = doc.data();
-                        var branch = d.branch || 'wealth';
-                        if (available[branch] === undefined) return;
+                    if (doc.exists) {
+                        var data = doc.data() || {};
+                        var branch = data.branch || 'wealth';
 
-                        var amt = Number(d.amount || 0);
-                        if (d.type === 'saving_deposit' && d.status === 'approved') {
-                            available[branch] += amt;
-                        } else if (d.type === 'saving_withdrawal' && d.status === 'approved') {
-                            available[branch] -= amt;
-                        } else if (d.type === 'saving_withdrawal' && d.status === 'pending') {
-                            // Pending withdrawals lock funds and reduce available balance
-                            available[branch] -= amt;
-                            pending[branch] += amt;
+                        // Case 1: single-doc shape (one branch per user)
+                        if (typeof data.balance === 'number') {
+                            if (approved[branch] !== undefined) {
+                                approved[branch] = Number(data.balance) || 0;
+                            }
+                            if (typeof data.pendingBalance === 'number' && pending[branch] !== undefined) {
+                                pending[branch] = Number(data.pendingBalance) || 0;
+                            }
                         }
-                    });
 
-                    // Prevent negative balances
-                    ['wealth', 'reserve', 'growth'].forEach(function(b) {
-                        if (available[b] < 0) available[b] = 0;
-                    });
+                        // Case 2: per-branch fields on the same doc
+                        ['wealth', 'reserve', 'growth'].forEach(function(b) {
+                            if (typeof data[b] === 'number') approved[b] = Number(data[b]) || 0;
+                            if (typeof data[b + 'Pending'] === 'number') pending[b] = Number(data[b + 'Pending']) || 0;
+                        });
 
-                    updateSavingsUI(available, pending);
+                        // Case 3: explicit maps
+                        if (data.approved && typeof data.approved === 'object') {
+                            ['wealth', 'reserve', 'growth'].forEach(function(b) {
+                                if (typeof data.approved[b] === 'number') approved[b] = Number(data.approved[b]) || 0;
+                            });
+                        }
+                        if (data.pending && typeof data.pending === 'object') {
+                            ['wealth', 'reserve', 'growth'].forEach(function(b) {
+                                if (typeof data.pending[b] === 'number') pending[b] = Number(data.pending[b]) || 0;
+                            });
+                        }
+                    }
+
+                    updateSavingsUI(approved, pending);
                 }, function(err) {
                     console.warn('Savings listener error:', err);
                     updateSavingsUI({ wealth: 0, reserve: 0, growth: 0 }, { wealth: 0, reserve: 0, growth: 0 });
@@ -1511,16 +1517,18 @@
                         // ----------------------------------------------------
                         // BALANCE READING — FIXED
                         // ----------------------------------------------------
-                        // Strictly use walletBalance for the withdrawable amount.
-                        // Do not use Math.max() here, as it will pull the wrong
-                        // balance if 'balance' represents Deposit or Total.
-                        // This matches the logic in withdraw.html.
+                        // walletBalance and balance are the SAME pot of money,
+                        // mirrored across two fields for legacy compatibility.
+                        // Taking Math.max(...) avoids double-counting after the
+                        // first withdrawal (when both fields hold the same value).
+                        // This matches the logic used in withdraw.html.
                         // ----------------------------------------------------
                         var deposit     = Number(data.depositBalance)  || 0;
-                        var wallet      = Number(data.walletBalance)   || 0; 
+                        var wallet      = Number(data.walletBalance)   || 0;
+                        var mainBalance = Number(data.balance)         || 0;
                         var activity    = Number(data.activityBalance) || 0;
 
-                        var displayWallet = wallet; // Strictly walletBalance
+                        var displayWallet = Math.max(wallet, mainBalance);
                         var total = deposit + displayWallet + activity;
 
                         document.getElementById('depositBalance').textContent = deposit.toFixed(2);
@@ -1733,8 +1741,8 @@
         });
 
         console.log('✅ Profile page · Sajvera Capital · Blue blur theme');
-        console.log('🔵 Balance fix: wallet = walletBalance (matches withdraw.html)');
-        console.log('🔵 Savings fix: reads dynamic savingsTransactions (matches withdraw.html)');
+        console.log('🔵 Balance fix: wallet = max(walletBalance, balance) — no double-counting');
+        console.log('🔵 Savings fix: reads top-level savings/{uid} (matches Firestore rules)');
     </script>
 
 </body>
