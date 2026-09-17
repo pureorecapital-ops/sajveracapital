@@ -633,13 +633,13 @@
         var WINDOW_OPEN_LABEL   = '09:00';
         var WINDOW_CLOSE_LABEL  = '18:30';
 
-        // ─── BALANCE HELPER ─────────────────────────────────
+        // ─── BALANCE HELPER (FIXED) ──────────────────────────
+        // We now strictly use walletBalance for withdrawals to ensure
+        // it matches the "WALLET BALANCE" shown on the dashboard.
         function computeAvailableBalance(userData) {
-            var wb  = Number(userData && userData.walletBalance);
-            var leg = Number(userData && userData.balance);
-            if (isNaN(wb))  wb  = 0;
-            if (isNaN(leg)) leg = 0;
-            return Math.max(wb, leg);
+            var wb = Number(userData && userData.walletBalance);
+            if (isNaN(wb)) wb = 0;
+            return wb;
         }
 
         // ─── TIME CHECK (09:00 → 18:30) ─────────────────────
@@ -780,7 +780,6 @@
                             'walletBalance:', data.walletBalance,
                             'balance:', data.balance,
                             'depositBalance:', data.depositBalance,
-                            'activityBalance:', data.activityBalance,
                             '→ withdrawable:', currentBalance);
 
                         if (userPhone && userPhone.startsWith('+260')) {
@@ -964,7 +963,7 @@
 
         step1Continue.addEventListener('click', function() { goToStep(2); });
 
-        // ─── SAVING BALANCE FETCH (single-field query + JS filter) ─
+        // ─── SAVING BALANCE FETCH ────────────────────────────
         function fetchSavingBalance(userId, branch) {
             return db.collection('savingsTransactions')
                 .where('userId', '==', userId)
@@ -1177,13 +1176,7 @@
             });
         }
 
-        // ============================================================
-        // ⏳ ESTIMATED PROCESSING TIME
-        // ------------------------------------------------------------
-        // ETA = now + 2 hours, capped at the close time (18:30).
-        // If we're outside the window, jump to the next business day
-        // at 09:00 (skipping Sat & Sun).
-        // ============================================================
+        // ─── ESTIMATED PROCESSING TIME ────────────────────────
         function getEstimatedProcessingTime() {
             var now = new Date();
             var nowMinutes = now.getHours() * 60 + now.getMinutes();
@@ -1191,7 +1184,6 @@
             var closeMinutes = WINDOW_CLOSE_HOUR * 60 + WINDOW_CLOSE_MIN;
 
             if (nowMinutes >= openMinutes && nowMinutes < closeMinutes) {
-                // Inside the window: ETA is +2h but capped at close time
                 var eta = new Date(now.getTime() + 2 * 60 * 60 * 1000);
                 var etaMinutes = eta.getHours() * 60 + eta.getMinutes();
                 if (etaMinutes > closeMinutes || eta.getDate() !== now.getDate()) {
@@ -1199,12 +1191,11 @@
                 }
                 return "by " + eta.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             } else {
-                // Outside the window: next business day at 09:00
                 var nextDay = new Date(now);
                 nextDay.setDate(nextDay.getDate() + 1);
                 nextDay.setHours(WINDOW_OPEN_HOUR, WINDOW_OPEN_MIN, 0, 0);
-                if (nextDay.getDay() === 6) nextDay.setDate(nextDay.getDate() + 2); // Sat → Mon
-                if (nextDay.getDay() === 0) nextDay.setDate(nextDay.getDate() + 1); // Sun → Mon
+                if (nextDay.getDay() === 6) nextDay.setDate(nextDay.getDate() + 2); 
+                if (nextDay.getDay() === 0) nextDay.setDate(nextDay.getDate() + 1); 
                 return "on " + nextDay.toLocaleDateString([], { day: 'numeric', month: 'short' }) +
                        " at " + WINDOW_OPEN_LABEL;
             }
@@ -1238,7 +1229,7 @@
             }
         }
 
-        // ─── SUBMIT WITHDRAWAL ──────────────────────────────────
+        // ─── SUBMIT WITHDRAWAL (FIXED) ──────────────────────────
         confirmSubmit.addEventListener('click', function() {
             if (isSubmitting) return;
 
@@ -1273,6 +1264,8 @@
                     withdrawData.bankName = savedInfo.bank;
                     withdrawData.cardNumber = savedInfo.cardNumber;
                 }
+                
+                // FIXED: Only updating walletBalance, NOT overwriting 'balance' or 'depositBalance'
                 db.runTransaction(function(transaction) {
                     var userRef = db.collection('users').doc(userId);
                     return transaction.get(userRef).then(function(doc) {
@@ -1291,9 +1284,9 @@
 
                         var newBalance = Number((currentBal - selectedAmount).toFixed(2));
 
+                        // ONLY update walletBalance. Do not touch 'balance' or 'depositBalance' here.
                         transaction.update(userRef, {
-                            walletBalance: newBalance,
-                            balance: newBalance
+                            walletBalance: newBalance
                         });
 
                         var withdrawalRef = db.collection('withdrawals').doc();
@@ -1422,13 +1415,12 @@
                 if (!d.exists) { console.log('❌ User doc missing'); return; }
                 var data = d.data();
                 var wb  = Number(data.walletBalance);
-                var leg = Number(data.balance);
                 console.table({
                     walletBalance:   { value: data.walletBalance,   type: typeof data.walletBalance },
                     balance:         { value: data.balance,         type: typeof data.balance },
                     depositBalance:  { value: data.depositBalance,  type: typeof data.depositBalance },
                     activityBalance: { value: data.activityBalance, type: typeof data.activityBalance },
-                    withdrawable:    { value: Math.max(isNaN(wb)?0:wb, isNaN(leg)?0:leg), type: 'computed' }
+                    withdrawable:    { value: isNaN(wb)?0:wb, type: 'computed' }
                 });
                 return data;
             });
@@ -1436,7 +1428,7 @@
 
         console.log('✅ withdraw.html · Sajvera Capital · Normal + Saving Withdrawal');
         console.log('🕘 Withdrawals allowed 09:00 → 18:30 only');
-        console.log('💳 Saving withdrawal uses separate balance and pending lock');
+        console.log('💳 Normal withdrawal uses walletBalance ONLY');
         console.log('🔧 Run __showBalance() in the console to inspect the current user\'s balance fields.');
     </script>
 
