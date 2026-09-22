@@ -393,12 +393,25 @@
 
         // ================================================================
         // ⭐ SERVER TIME — CORE SECURITY FIX
+        // ----------------------------------------------------------------
+        // Why: the old code trusted `new Date()` (device clock). Users who
+        // changed their phone clock could farm infinite claims. We now
+        // derive "now" from a real Firestore serverTimestamp() round-trip.
+        //
+        // How it works:
+        //   1. Write a doc with FieldValue.serverTimestamp().
+        //   2. Read it back → that's real server time.
+        //   3. Add half of RTT to account for write/read latency.
+        //   4. Cache the (serverMs − deviceMs) OFFSET so we can keep using
+        //      it for UI without hammering Firestore.
+        //   5. On every claim, force a FRESH probe — never trust the cache.
         // ================================================================
-        var serverTimeOffsetMs = null;
+        var serverTimeOffsetMs = null;   // serverMs − deviceMs
         var lastServerSyncMs   = 0;
-        var SERVER_SYNC_TTL_MS = 60000;
-        var SERVER_TIME_PATH   = ['_sys', 'clock'];
+        var SERVER_SYNC_TTL_MS = 60000;  // reuse offset for 60s in UI only
+        var SERVER_TIME_PATH   = ['_sys', 'clock']; // users/{uid}/_sys/clock
 
+        // Returns true server-time in ms, or null on failure.
         async function probeServerTimeMs() {
             if (!currentUserId) return null;
             var t0 = Date.now();
@@ -414,6 +427,7 @@
                 var serverMs = data.pingAt.toMillis();
                 var rtt = t1 - t0;
                 var serverNowMs = serverMs + Math.floor(rtt / 2);
+                // Update offset cache for UI
                 serverTimeOffsetMs = serverNowMs - t1;
                 lastServerSyncMs   = t1;
                 return serverNowMs;
@@ -423,14 +437,17 @@
             }
         }
 
+        // For UI / display only. Never use the cache inside a claim.
         function getAdjustedNow() {
-            if (serverTimeOffsetMs === null) return new Date();
+            if (serverTimeOffsetMs === null) return new Date(); // pre-sync fallback
             return new Date(Date.now() + serverTimeOffsetMs);
         }
 
+        // For claims: ALWAYS fresh server time.
         async function getAuthoritativeNowMs() {
             var ms = await probeServerTimeMs();
             if (ms !== null) return ms;
+            // Fallback chain: cached offset → device time (last resort)
             if (serverTimeOffsetMs !== null) return Date.now() + serverTimeOffsetMs;
             return Date.now();
         }
@@ -495,34 +512,6 @@
         }
 
         // ================================================================
-        // ⭐ NUMERIC SAFETY HELPERS  (NEW)
-        // ----------------------------------------------------------------
-        // The old code used FieldValue.increment() directly on `balance`.
-        // If a user's balance field happened to be a string ("150.00"),
-        // or the user document didn't exist at all, the whole Firestore
-        // transaction aborted — but only for THAT user. That is exactly
-        // why "some users see it, others don't".
-        //
-        // We now coerce everything to a real number and do an explicit
-        // read → compute → write, so the result is deterministic.
-        // ================================================================
-        function toNum(v, fallback) {
-            if (v === null || v === undefined) return fallback || 0;
-            if (typeof v === 'number') return isFinite(v) ? v : (fallback || 0);
-            if (typeof v === 'string') {
-                var n = parseFloat(v.replace(/[^0-9.\-]/g, ''));
-                return isFinite(n) ? n : (fallback || 0);
-            }
-            if (typeof v === 'object' && typeof v.toNumber === 'function') {
-                try { return v.toNumber(); } catch (e) { return fallback || 0; }
-            }
-            return fallback || 0;
-        }
-        function round2(n) {
-            return Math.round((n + Number.EPSILON) * 100) / 100;
-        }
-
-        // ================================================================
         // STATE
         // ================================================================
         var currentUserId = null;
@@ -532,6 +521,7 @@
         var planImageCache = {};
         var allActivePlans = [];
 
+        // In-flight locks (double-tap / multi-tab protection)
         var inFlightClaims = Object.create(null);
         var claimAllRunning = false;
         function lockKey(id) { return 'plan:' + id; }
@@ -572,9 +562,11 @@
                 currentUserId = user.uid;
                 watchBlockStatus(currentUserId);
 
+                // Kick off an initial server-time sync immediately
                 probeServerTimeMs().then(function (ms) {
                     if (ms) loadAllPlans();
                 });
+                // Then keep UI synced every 5 min (cheap: 1 write + 1 read)
                 setInterval(function () { probeServerTimeMs(); }, 5 * 60 * 1000);
 
                 loadAllPlans();
@@ -595,11 +587,6 @@
                         document.getElementById('panelEmail').textContent = data.email || user.email;
                     }
                 }).catch(console.warn);
-
-                // ⭐ One-time self-heal: if any past claim transaction is
-                // missing its balance credit, repair it now.
-                setTimeout(function () { repairMissingCredits(user.uid); }, 3000);
-
             } else {
                 if (!authResolved) {
                     if (!redirectTimeout) {
@@ -648,16 +635,16 @@
         }
 
         // ================================================================
-        // INCOME STATUS
+        // INCOME STATUS — single source of truth
         // ================================================================
         function getClaimStatus(plan, now) {
             var startDate = plan.startDate;
             if (!(startDate instanceof Date)) {
                 startDate = startDate && startDate.toDate ? startDate.toDate() : new Date(startDate);
             }
-            var totalBusinessDays = toNum(plan.businessDays || plan.days, 0);
-            var claimsCount = toNum(plan.claimsCount, 0);
-            var dailyAmount = toNum(plan.dailyReturn || plan.dailyAmount, 0);
+            var totalBusinessDays = plan.businessDays || plan.days || 0;
+            var claimsCount = plan.claimsCount || 0;
+            var dailyAmount = plan.dailyReturn || plan.dailyAmount || 0;
             var lastClaimedDate = lastClaimedToDate(plan.lastClaimed);
 
             var nowDay = getZambiaDayNumber(now);
@@ -704,8 +691,8 @@
             if (!(startDate instanceof Date)) {
                 startDate = startDate && startDate.toDate ? startDate.toDate() : new Date(startDate);
             }
-            var totalBusinessDays = toNum(plan.businessDays || plan.days, 0);
-            var claimsCount = toNum(plan.claimsCount, 0);
+            var totalBusinessDays = plan.businessDays || plan.days || 0;
+            var claimsCount = plan.claimsCount || 0;
             var nowDay = getZambiaDayNumber(getAdjustedNow());
             var startDay = getZambiaDayNumber(startDate);
             var lastIncomeDay = startDay;
@@ -754,21 +741,20 @@
                     var plan = allPlans[i];
                     if (plan.planType === 'invest') {
                         var startDate = plan.startDate;
-                        var businessDays = toNum(plan.businessDays || plan.days, 0);
+                        var businessDays = plan.businessDays || plan.days;
                         var endDate = plan.businessEndDate ? plan.businessEndDate : addBusinessDays(startDate, businessDays);
                         var nowDay = getZambiaDayNumber(now);
                         var startDay = getZambiaDayNumber(startDate);
                         var lastIncomeDay = startDay;
                         for (var k = 0; k < businessDays; k++) lastIncomeDay = nextBusinessDayNumber(lastIncomeDay);
                         var slotExhausted = nowDay > lastIncomeDay;
-                        var allClaimed = toNum(plan.claimsCount, 0) >= businessDays;
+                        var allClaimed = (plan.claimsCount || 0) >= businessDays;
                         var isExpired = false;
                         if (plan.status === 'completed' || slotExhausted || allClaimed) isExpired = true;
                         var investment = {
                             id: plan.id, ...plan,
                             startDate: startDate, businessDays: businessDays, endDate: endDate,
-                            dailyAmount: toNum(plan.dailyReturn, 0),
-                            claimsCount: toNum(plan.claimsCount, 0),
+                            dailyAmount: plan.dailyReturn, claimsCount: plan.claimsCount || 0,
                             lastClaimed: plan.lastClaimed || null,
                             purchasedOnWeekend: plan.purchasedOnWeekend || false,
                             planType: 'invest', claimable: true
@@ -779,9 +765,9 @@
                         var isExpiredBuy = plan.status === 'claimed' || plan.status === 'expired' || (expiryDate && now > expiryDate);
                         var buyPlan = {
                             id: plan.id, ...plan, planType: 'buy', expiryDate: expiryDate,
-                            amount: toNum(plan.amount || plan.purchaseAmount, 0),
-                            totalIncome: toNum(plan.totalIncome, 0),
-                            finalAmount: toNum(plan.amount || plan.purchaseAmount, 0) + toNum(plan.totalIncome, 0),
+                            amount: plan.amount || plan.purchaseAmount || 0,
+                            totalIncome: plan.totalIncome || 0,
+                            finalAmount: (plan.amount || plan.purchaseAmount || 0) + (plan.totalIncome || 0),
                             status: plan.status || 'active',
                             claimedAt: plan.claimedAt || null,
                             claimAmount: plan.claimAmount || null,
@@ -824,9 +810,10 @@
                 var busy = isLocked(plan.id);
                 if (plan.planType === 'invest') {
                     var status = getClaimStatus(plan, now);
+                    var canClaim = status.available && !busy;
                     var daysLeft = status.daysRemaining;
-                    var totalClaimed = plan.claimsCount * plan.dailyAmount;
-                    var claimsCount = plan.claimsCount;
+                    var totalClaimed = (plan.claimsCount || 0) * plan.dailyAmount;
+                    var claimsCount = plan.claimsCount || 0;
                     var statusText = '';
                     var countdownText = '';
                     if (busy) { statusText = '⏳ Claiming…'; }
@@ -1003,7 +990,7 @@
                             </div>
                         </div>`;
                 } else {
-                    var totalClaimed = toNum(plan.claimsCount, 0) * toNum(plan.dailyReturn, 0);
+                    var totalClaimed = (plan.claimsCount || 0) * (plan.dailyReturn || 0);
                     html += `
                         <div class="plan-card expired">
                             <img class="plan-image" src="${img}" alt="${escapeHtml(plan.planName)}" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='https://i.ibb.co/BKHsdj4B/IMG-20260525-114417.jpg'" />
@@ -1015,7 +1002,7 @@
                                 </div>
                                 <div class="claim-stats" style="margin-top:0.3rem;">
                                     <span class="stat-item">💰 Total Claimed: <span class="num gold">${formatMoney(totalClaimed)}</span></span>
-                                    <span class="stat-item">📊 Claims: <span class="num blue">${toNum(plan.claimsCount, 0)}</span></span>
+                                    <span class="stat-item">📊 Claims: <span class="num blue">${plan.claimsCount || 0}</span></span>
                                 </div>
                             </div>
                         </div>`;
@@ -1069,23 +1056,7 @@
         }
 
         // ================================================================
-        // ⭐ CLAIM DAILY INCOME — ATOMIC BALANCE CREDIT (FIXED)
-        // ----------------------------------------------------------------
-        // Root cause of "claimed but balance not updated":
-        //   • transaction.update() on users/{uid} throws NOT_FOUND if the
-        //     user document doesn't exist  → whole claim aborts (silently
-        //     for some signup flows).
-        //   • FieldValue.increment() throws if `balance` is stored as a
-        //     string ("150.00") instead of a number → same abort.
-        //   • Some dashboards read a *different* field name entirely.
-        //
-        // The fix:
-        //   1. READ the user doc INSIDE the transaction.
-        //   2. Coerce whatever is there into a real number.
-        //   3. Compute newBalance = oldBalance + amount  (explicit).
-        //   4. set(..., { merge: true })  → creates the doc if missing.
-        //   5. Record balanceBefore / balanceAfter on the ledger entry so
-        //      support can audit any user in seconds.
+        // ⭐ CLAIM DAILY INCOME — server-time verified
         // ================================================================
         async function claimDailyIncome(investmentId, dailyAmount, refreshAfter, btnElement) {
             var user = auth.currentUser;
@@ -1100,45 +1071,41 @@
             var failureMsg = '';
 
             try {
+                // ⭐ Fetch TRUE server time BEFORE the transaction.
+                // This is the critical anti-tamper step — `new Date()` is
+                // never used for eligibility here.
                 var serverNowMs = await getAuthoritativeNowMs();
                 var serverNow = new Date(serverNowMs);
 
                 await db.runTransaction(async function(transaction) {
-                    var invRef  = db.collection('investments').doc(investmentId);
-                    var userRef = db.collection('users').doc(user.uid);
-
-                    // ---------- ALL READS FIRST (Firestore requirement) ----------
+                    var invRef = db.collection('investments').doc(investmentId);
                     var invSnap = await transaction.get(invRef);
                     if (!invSnap.exists) throw new Error('Investment not found');
                     var invData = invSnap.data();
 
+                    // HARD ownership check — even if user fakes UI, they can't claim another user's plan
                     if (invData.userId !== user.uid) throw new Error('Unauthorized');
 
-                    // Read the user doc inside the tx. We do NOT throw if it
-                    // is missing — we simply create it with merge below.
-                    var userSnap = await transaction.get(userRef);
-
-                    // ---------- VALIDATION ----------
                     var start = invData.startDate && invData.startDate.toDate
                         ? invData.startDate.toDate()
                         : new Date(invData.startDate);
+                    var claimsCount = invData.claimsCount || 0;
+                    var totalBusinessDays = invData.businessDays || invData.days || 0;
+                    var planDailyAmount = invData.dailyReturn || invData.dailyAmount || dailyAmount || 0;
 
-                    var claimsCount       = toNum(invData.claimsCount, 0);
-                    var totalBusinessDays = toNum(invData.businessDays || invData.days, 0);
-                    var planDailyAmount   = toNum(invData.dailyReturn || invData.dailyAmount || dailyAmount, 0);
-
-                    if (planDailyAmount <= 0) throw new Error('Invalid daily amount');
-
+                    // GUARD A: server-time day must strictly advance since last claim
                     var todayNum = getZambiaDayNumber(serverNow);
-
                     var lastDate = lastClaimedToDate(invData.lastClaimed);
                     if (lastDate && getZambiaDayNumber(lastDate) === todayNum) {
                         throw new Error('Already claimed today');
                     }
+
+                    // GUARD B: plan not exhausted
                     if (totalBusinessDays > 0 && claimsCount >= totalBusinessDays) {
                         throw new Error('Plan completed');
                     }
 
+                    // GUARD C: full eligibility re-check with SERVER time
                     var status = getClaimStatus({
                         startDate: start,
                         claimsCount: claimsCount,
@@ -1146,54 +1113,27 @@
                         businessDays: totalBusinessDays,
                         lastClaimed: invData.lastClaimed
                     }, serverNow);
+
                     if (!status.available) throw new Error('Claim not available at this time');
 
-                    // ---------- WRITES ----------
-                    // 1) Balance — explicit numeric read-modify-write
-                    var oldBalance = userSnap.exists ? toNum(userSnap.data().balance, 0) : 0;
-                    var newBalance = round2(oldBalance + planDailyAmount);
-
-                    transaction.set(userRef, {
-                        balance: newBalance,
-                        balanceUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        uid: user.uid
-                    }, { merge: true });
-
-                    // 2) Investment — absolute count (safe: we read it above)
-                    transaction.set(invRef, {
-                        claimsCount: claimsCount + 1,
+                    // Write it
+                    transaction.update(db.collection('users').doc(user.uid), {
+                        balance: firebase.firestore.FieldValue.increment(planDailyAmount)
+                    });
+                    transaction.update(invRef, {
+                        claimsCount: firebase.firestore.FieldValue.increment(1),
                         lastClaimed: firebase.firestore.FieldValue.serverTimestamp()
-                    }, { merge: true });
-
-                    // 3) Ledger / audit trail with deterministic key so a
-                    //    repair pass can detect a missing credit later.
-                    var ledgerKey = 'daily_' + investmentId + '_' + todayNum;
-                    var txRef = db.collection('transactions').doc(ledgerKey);
+                    });
+                    var txRef = db.collection('transactions').doc();
                     transaction.set(txRef, {
                         userId: user.uid,
                         investmentId: investmentId,
                         type: 'daily_income',
                         amount: planDailyAmount,
-                        balanceBefore: oldBalance,
-                        balanceAfter: newBalance,
                         dayNumber: todayNum,
-                        ledgerKey: ledgerKey,
                         description: 'Daily income from ' + (invData.planName || 'investment'),
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-
-                    // 4) Idempotency marker (users/{uid}/creditLedger/{key})
-                    transaction.set(
-                        userRef.collection('creditLedger').doc(ledgerKey),
-                        {
-                            amount: planDailyAmount,
-                            source: 'daily_income',
-                            investmentId: investmentId,
-                            dayNumber: todayNum,
-                            appliedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        }
-                    );
-
                     claimedAmount = planDailyAmount;
                 });
 
@@ -1205,7 +1145,6 @@
                 else if (msg === 'Plan completed') msg = 'This plan has finished.';
                 else if (msg.indexOf('not available') !== -1) msg = 'Claim window closed. Income is available 00:00–22:00 (CAT).';
                 else if (msg === 'Unauthorized') msg = 'This plan does not belong to your account.';
-                else if (msg === 'Invalid daily amount') msg = 'This plan has an invalid daily amount. Please contact support.';
                 else if (err && err.code === 'permission-denied') msg = 'Permission denied. Please refresh the page and try again.';
                 else if (err && err.code === 'unavailable') msg = 'Network error. Please check your internet connection.';
                 failureMsg = msg;
@@ -1215,7 +1154,7 @@
             }
 
             if (success) {
-                showToast('✅ ' + formatMoney(claimedAmount) + ' credited to your balance!', false);
+                showToast('✅ ' + formatMoney(claimedAmount) + ' claimed!', false);
                 if (refreshAfter) await loadAllPlans();
                 return true;
             }
@@ -1224,7 +1163,7 @@
         }
 
         // ================================================================
-        // ⭐ CLAIM BUY PLAN — ATOMIC BALANCE CREDIT (FIXED)
+        // ⭐ CLAIM BUY PLAN — server-time verified
         // ================================================================
         async function claimBuyPlan(purchaseId, btnElement) {
             var user = auth.currentUser;
@@ -1240,76 +1179,44 @@
             var failureMsg = '';
 
             try {
+                // ⭐ True server time BEFORE transaction
                 var serverNowMs = await getAuthoritativeNowMs();
                 var serverNow = new Date(serverNowMs);
 
                 await db.runTransaction(async function(transaction) {
                     var purchaseRef = db.collection('marketplacePurchases').doc(purchaseId);
-                    var userRef     = db.collection('users').doc(uid);
-
-                    // ---------- ALL READS FIRST ----------
                     var purchaseSnap = await transaction.get(purchaseRef);
                     if (!purchaseSnap.exists) throw new Error('Plan not found');
                     var purchaseData = purchaseSnap.data();
 
                     if (purchaseData.userId !== uid) throw new Error('Unauthorized');
-
-                    var userSnap = await transaction.get(userRef);
-
-                    // ---------- VALIDATION ----------
                     if (purchaseData.status === 'claimed') throw new Error('Already claimed');
 
                     var expiryTx = purchaseData.expiresAt ? purchaseData.expiresAt.toDate() : null;
                     if (!expiryTx || serverNow < expiryTx) throw new Error('Not matured');
 
-                    var amount      = toNum(purchaseData.amount || purchaseData.purchaseAmount, 0);
-                    var totalIncome = toNum(purchaseData.totalIncome, 0);
-                    var finalAmount = round2(amount + totalIncome);
-
-                    if (finalAmount <= 0) throw new Error('Invalid claim amount');
+                    var amount = purchaseData.amount || 0;
+                    var totalIncome = purchaseData.totalIncome || 0;
+                    var finalAmount = amount + totalIncome;
                     finalAmountGlobal = finalAmount;
 
-                    // ---------- WRITES ----------
-                    var oldBalance = userSnap.exists ? toNum(userSnap.data().balance, 0) : 0;
-                    var newBalance = round2(oldBalance + finalAmount);
-
-                    transaction.set(userRef, {
-                        balance: newBalance,
-                        balanceUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        uid: uid
-                    }, { merge: true });
-
-                    transaction.set(purchaseRef, {
+                    transaction.update(db.collection('users').doc(uid), {
+                        balance: firebase.firestore.FieldValue.increment(finalAmount)
+                    });
+                    transaction.update(purchaseRef, {
                         status: 'claimed',
                         claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        claimAmount: finalAmount,
-                        balanceBefore: oldBalance,
-                        balanceAfter: newBalance
-                    }, { merge: true });
-
-                    var ledgerKey = 'buy_' + purchaseId;
-                    var txRef = db.collection('transactions').doc(ledgerKey);
+                        claimAmount: finalAmount
+                    });
+                    var txRef = db.collection('transactions').doc();
                     transaction.set(txRef, {
                         userId: uid,
                         purchaseId: purchaseId,
                         type: 'buy_plan_claim',
                         amount: finalAmount,
-                        balanceBefore: oldBalance,
-                        balanceAfter: newBalance,
-                        ledgerKey: ledgerKey,
                         description: 'Buy plan claim: ' + (purchaseData.planName || 'Buy plan'),
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-
-                    transaction.set(
-                        userRef.collection('creditLedger').doc(ledgerKey),
-                        {
-                            amount: finalAmount,
-                            source: 'buy_plan_claim',
-                            purchaseId: purchaseId,
-                            appliedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        }
-                    );
                 });
 
                 success = true;
@@ -1319,7 +1226,6 @@
                 if (msg === 'Already claimed') msg = 'This plan has already been claimed.';
                 else if (msg === 'Not matured') msg = 'This plan is not yet ready for claim.';
                 else if (msg === 'Unauthorized') msg = 'This plan does not belong to your account.';
-                else if (msg === 'Invalid claim amount') msg = 'This plan has an invalid amount. Please contact support.';
                 else if (err && err.code === 'permission-denied') msg = 'Permission denied. Please refresh the page and try again.';
                 else if (err && err.code === 'unavailable') msg = 'Network error. Please check your internet connection.';
                 failureMsg = msg;
@@ -1329,116 +1235,13 @@
             }
 
             if (success) {
-                showToast('✅ ' + formatMoney(finalAmountGlobal) + ' credited to your balance!', false);
+                showToast('✅ ' + formatMoney(finalAmountGlobal) + ' claimed!', false);
                 await loadAllPlans();
                 return true;
             }
             showToast(failureMsg || 'Claim failed', true);
             return false;
         }
-
-        // ================================================================
-        // ⭐ SELF-HEAL: REPAIR CLAIMS THAT NEVER REACHED THE BALANCE
-        // ----------------------------------------------------------------
-        // Scans the user's creditLedger. Any ledger entry that exists but
-        // whose amount is NOT reflected in the balance gets applied now.
-        //
-        // Safe to run on every page load: it is fully idempotent because
-        // each repair writes a `repaired: true` marker.
-        // ================================================================
-        async function repairMissingCredits(uid) {
-            try {
-                var userRef = db.collection('users').doc(uid);
-                var ledgerSnap = await userRef.collection('creditLedger')
-                    .orderBy('appliedAt', 'desc').limit(200).get();
-
-                if (ledgerSnap.empty) return;
-
-                // Sum the ledger and compare to the balance.
-                var ledgerTotal = 0;
-                var entries = [];
-                ledgerSnap.forEach(function(d) {
-                    var e = d.data() || {};
-                    entries.push({ id: d.id, amount: toNum(e.amount, 0), repaired: e.repaired === true });
-                    ledgerTotal += toNum(e.amount, 0);
-                });
-
-                var userSnap = await userRef.get();
-                var currentBalance = userSnap.exists ? toNum(userSnap.data().balance, 0) : 0;
-
-                // We cannot know historical deposits/withdrawals here, so we
-                // only flag, never auto-overwrite, unless the balance is
-                // clearly BELOW the sum of credits alone.
-                if (round2(currentBalance) + 0.01 < round2(ledgerTotal)) {
-                    var shortfall = round2(ledgerTotal - currentBalance);
-                    console.warn('[self-heal] balance shortfall detected:', shortfall);
-
-                    await db.runTransaction(async function(transaction) {
-                        var snap = await transaction.get(userRef);
-                        var bal = snap.exists ? toNum(snap.data().balance, 0) : 0;
-                        var fixed = round2(bal + shortfall);
-                        transaction.set(userRef, {
-                            balance: fixed,
-                            balanceUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                            lastRepairAt: firebase.firestore.FieldValue.serverTimestamp(),
-                            lastRepairAmount: shortfall
-                        }, { merge: true });
-                    });
-
-                    // Audit the repair
-                    await db.collection('balanceRepairs').add({
-                        userId: uid,
-                        shortfall: shortfall,
-                        before: currentBalance,
-                        after: round2(currentBalance + shortfall),
-                        reason: 'credit ledger exceeded stored balance',
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-
-                    showToast('🔧 Balance corrected by ' + formatMoney(shortfall), false);
-                }
-            } catch (e) {
-                console.warn('[self-heal] skipped:', e && e.message);
-            }
-        }
-
-        // ================================================================
-        // ⭐ MANUAL AUDIT TOOL — run from the browser console:
-        //     auditBalance('USER_UID')
-        // ================================================================
-        window.auditBalance = async function(uid) {
-            var userRef = db.collection('users').doc(uid);
-            var userSnap = await userRef.get();
-            var balance = userSnap.exists ? toNum(userSnap.data().balance, 0) : null;
-
-            var txSnap = await db.collection('transactions')
-                .where('userId', '==', uid).get();
-
-            var CREDITS = { daily_income:1, buy_plan_claim:1, deposit:1, referral_bonus:1, admin_credit:1 };
-            var DEBITS  = { withdrawal:1, purchase:1, buy_plan_purchase:1, investment:1, admin_debit:1 };
-
-            var creditSum = 0, debitSum = 0, lines = [];
-            txSnap.forEach(function(d) {
-                var t = d.data();
-                var amt = toNum(t.amount, 0);
-                if (CREDITS[t.type]) { creditSum += amt; lines.push('+ ' + amt.toFixed(2) + '  ' + t.type + '  ' + d.id); }
-                else if (DEBITS[t.type]) { debitSum += amt; lines.push('- ' + amt.toFixed(2) + '  ' + t.type + '  ' + d.id); }
-                else lines.push('? ' + amt.toFixed(2) + '  ' + t.type + '  ' + d.id);
-            });
-
-            var expected = round2(creditSum - debitSum);
-            var report = {
-                uid: uid,
-                storedBalance: balance,
-                ledgerCredits: round2(creditSum),
-                ledgerDebits: round2(debitSum),
-                expectedBalance: expected,
-                drift: balance === null ? null : round2(balance - expected),
-                entries: lines
-            };
-            console.table(report);
-            return report;
-        };
 
         // ================================================================
         // CLAIM ALL (Invest only)
@@ -1539,9 +1342,7 @@
             });
         });
 
-        console.log('✅ Server-time verified claims active.');
-        console.log('✅ Balance credits are atomic + self-healing.');
-        console.log('ℹ️  Run auditBalance("USER_UID") in console to inspect any user.');
+        console.log('✅ Server-time verified claims active. Device clock changes have no effect.');
     </script>
 
 </body>

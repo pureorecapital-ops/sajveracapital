@@ -9,7 +9,14 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* ================================================================
+                   RESET & BASE — Blue Blur Theme (matches dashboard)
+                   ================================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: 'Inter', -apple-system, system-ui, sans-serif;
@@ -23,540 +30,1093 @@
             position: relative;
         }
 
+        /* ===== FULL SCREEN BLURRED BACKGROUND ===== */
         .hero-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; overflow: hidden; will-change: transform;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            will-change: transform;
         }
+
         .hero-bg::before {
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background-image: url('https://i.ibb.co/hJKq9tHT/file-0000000016a4820cade58b3dbac7151c.png');
-            background-size: cover; background-position: center;
+            background-size: cover;
+            background-position: center;
             filter: blur(6px) brightness(0.3) saturate(0.8);
         }
+
         .hero-bg::after {
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: linear-gradient(180deg, rgba(7, 28, 18, 0.40) 0%, rgba(7, 28, 18, 0.85) 100%);
         }
 
+        /* ===== HEADER ===== */
         .header {
-            position: fixed; top: 0; left: 0; width: 100%; padding: 0.8rem 1.5rem;
-            display: flex; justify-content: space-between; align-items: center; z-index: 100;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
             background: rgba(7, 28, 18, 0.60);
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border-bottom: 1px solid rgba(59, 130, 246, 0.04);
             will-change: transform;
         }
-        .logo-text {
-            font-size: 1.4rem; font-weight: 700; color: #F7F4E9;
-            text-decoration: none; letter-spacing: -0.4px;
-        }
-        .logo-text .vc { color: #3b82f6; }
 
-        .header-right { display: flex; align-items: center; gap: 1rem; }
+        .logo-text {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #F7F4E9;
+            text-decoration: none;
+            letter-spacing: -0.4px;
+        }
+        .logo-text .vc {
+            color: #3b82f6;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
 
         .hamburger {
-            display: flex; flex-direction: column; gap: 5px; cursor: pointer;
-            padding: 6px 10px; border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 8px;
             background: rgba(255, 255, 255, 0.02);
-            border: 1px solid transparent; transition: 0.2s;
+            border: 1px solid transparent;
+            transition: 0.2s;
         }
-        .hamburger:hover { background: rgba(255, 255, 255, 0.04); }
+        .hamburger:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
         .hamburger span {
-            display: block; width: 24px; height: 2px; background: #F7F4E9;
-            border-radius: 4px; transition: 0.3s;
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: #F7F4E9;
+            border-radius: 4px;
+            transition: 0.3s;
         }
-        .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
-        .hamburger.active span:nth-child(2) { opacity: 0; }
-        .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
 
+        /* ===== SLIDE MENU PANEL ===== */
         .menu-panel {
-            position: fixed; top: 0; right: -380px; width: 340px; height: 100%;
+            position: fixed;
+            top: 0;
+            right: -380px;
+            width: 340px;
+            height: 100%;
             background: rgba(7, 28, 18, 0.92);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             box-shadow: -8px 0 40px rgba(0, 0, 0, 0.6);
             padding: 2rem 1.8rem;
             transition: right 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-            z-index: 200; overflow-y: auto;
-            display: flex; flex-direction: column; gap: 0.3rem;
+            z-index: 200;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
             color: #F7F4E9;
             border-left: 1px solid rgba(59, 130, 246, 0.04);
             will-change: transform;
         }
-        .menu-panel.open { right: 0; }
-        .menu-panel .close-btn {
-            align-self: flex-end; background: none; border: none;
-            color: rgba(247, 244, 233, 0.3); font-size: 2rem;
-            cursor: pointer; padding: 0 0.5rem; transition: 0.2s;
+
+        .menu-panel.open {
+            right: 0;
         }
-        .menu-panel .close-btn:hover { color: #F7F4E9; }
+
+        .menu-panel .close-btn {
+            align-self: flex-end;
+            background: none;
+            border: none;
+            color: rgba(247, 244, 233, 0.3);
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0 0.5rem;
+            transition: 0.2s;
+        }
+        .menu-panel .close-btn:hover {
+            color: #F7F4E9;
+        }
 
         .menu-item {
-            display: flex; align-items: center; gap: 14px;
-            padding: 0.7rem 0.8rem; border-radius: 12px;
-            cursor: pointer; transition: all 0.25s ease;
-            text-decoration: none; color: rgba(247, 244, 233, 0.5);
-            border: none; background: transparent; width: 100%;
-            font-family: inherit; font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 0.7rem 0.8rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            color: rgba(247, 244, 233, 0.5);
+            border: none;
+            background: transparent;
+            width: 100%;
+            font-family: inherit;
+            font-size: 0.95rem;
         }
+
         .menu-item:hover {
             background: rgba(59, 130, 246, 0.06);
-            color: #F7F4E9; transform: translateX(4px);
+            color: #F7F4E9;
+            transform: translateX(4px);
         }
+
         .menu-item .mi-icon {
-            width: 32px; height: 32px;
-            display: flex; align-items: center; justify-content: center;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             flex-shrink: 0;
         }
+
         .menu-item .mi-icon svg {
-            width: 22px; height: 22px; stroke: currentColor;
-            stroke-width: 1.8; fill: none;
-            stroke-linecap: round; stroke-linejoin: round;
+            width: 22px;
+            height: 22px;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
-        .menu-item .mi-label { flex: 1; }
-        .menu-item .mi-arrow { color: rgba(247, 244, 233, 0.15); }
+
+        .menu-item .mi-label {
+            flex: 1;
+        }
+
+        .menu-item .mi-arrow {
+            color: rgba(247, 244, 233, 0.15);
+        }
         .menu-item .mi-arrow svg {
-            width: 18px; height: 18px; stroke: currentColor;
-            stroke-width: 2; fill: none;
-            stroke-linecap: round; stroke-linejoin: round;
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
+
         .menu-divider {
-            height: 1px; background: rgba(255, 255, 255, 0.04);
+            height: 1px;
+            background: rgba(255, 255, 255, 0.04);
             margin: 0.2rem 0.8rem;
         }
 
+        /* ===== CONTAINER ===== */
         .container {
-            max-width: 480px; margin: 0 auto; padding: 0 1.2rem;
-            flex: 1; width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 1.2rem;
+            flex: 1;
+            width: 100%;
         }
 
+        /* ===== PROFILE CARD ===== */
         .profile-card {
             background: rgba(7, 28, 18, 0.45);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(59, 130, 246, 0.06);
-            border-radius: 28px; padding: 2rem 1.8rem;
+            border-radius: 28px;
+            padding: 2rem 1.8rem;
             margin-bottom: 1.8rem;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(59, 130, 246, 0.04);
             animation: fadeUp 0.6s ease forwards;
-            position: relative; overflow: hidden; will-change: transform;
+            position: relative;
+            overflow: hidden;
+            will-change: transform;
         }
+
         .profile-card::before {
-            content: ''; position: absolute; top: -50%; left: -50%;
-            width: 200%; height: 200%;
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
             background: radial-gradient(circle at 30% 20%, rgba(59, 130, 246, 0.04) 0%, transparent 60%);
             pointer-events: none;
         }
+
         @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        .profile-card .avatar-wrap { display: flex; justify-content: center; margin-bottom: 1.2rem; }
+
+        .profile-card .avatar-wrap {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.2rem;
+        }
+
         .profile-card .avatar {
-            width: 96px; height: 96px; border-radius: 50%;
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
             background: linear-gradient(135deg, #1d4ed8, #3b82f6);
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
             border: 2px solid rgba(59, 130, 246, 0.08);
         }
-        .profile-card .avatar .avatar-letter {
-            font-size: 2.6rem; font-weight: 700; color: #F7F4E9;
-        }
-        .profile-card .name {
-            font-size: 1.5rem; font-weight: 700; text-align: center;
-            color: #F7F4E9; letter-spacing: -0.3px;
-        }
-        .profile-card .email {
-            font-size: 0.85rem; color: rgba(247, 244, 233, 0.35);
-            text-align: center; margin-top: 0.1rem;
-        }
-        .profile-card .status-toggle {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(255, 255, 255, 0.02);
-            padding: 0.3rem 1.2rem; border-radius: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            cursor: pointer; transition: all 0.3s ease;
-            margin: 0.6rem auto 0; font-size: 0.8rem; font-weight: 500;
-            color: rgba(247, 244, 233, 0.5); width: fit-content;
-        }
-        .profile-card .status-toggle:hover { background: rgba(255, 255, 255, 0.04); }
-        .profile-card .status-toggle .dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: #3b82f6; transition: background 0.3s ease;
-        }
-        .profile-card .status-toggle .dot.offline { background: #dc2626; }
 
-        .balances-row {
-            display: grid; grid-template-columns: repeat(3, 1fr);
-            gap: 0.8rem; margin-bottom: 1.6rem;
+        .profile-card .avatar .avatar-letter {
+            font-size: 2.6rem;
+            font-weight: 700;
+            color: #F7F4E9;
         }
-        @media (max-width: 420px) { .balances-row { gap: 0.5rem; } }
+
+        .profile-card .name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            color: #F7F4E9;
+            letter-spacing: -0.3px;
+        }
+
+        .profile-card .email {
+            font-size: 0.85rem;
+            color: rgba(247, 244, 233, 0.35);
+            text-align: center;
+            margin-top: 0.1rem;
+        }
+
+        .profile-card .status-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.3rem 1.2rem;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0.6rem auto 0;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: rgba(247, 244, 233, 0.5);
+            width: fit-content;
+        }
+
+        .profile-card .status-toggle:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .profile-card .status-toggle .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #3b82f6;
+            transition: background 0.3s ease;
+        }
+
+        .profile-card .status-toggle .dot.offline {
+            background: #dc2626;
+        }
+
+        /* ===== BALANCE CARDS ===== */
+        .balances-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.8rem;
+            margin-bottom: 1.6rem;
+        }
+
+        @media (max-width: 420px) {
+            .balances-row {
+                gap: 0.5rem;
+            }
+        }
 
         .balance-card {
             background: rgba(7, 28, 18, 0.35);
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.03);
-            border-radius: 18px; padding: 1rem 0.4rem;
-            text-align: center; transition: all 0.3s ease;
+            border-radius: 18px;
+            padding: 1rem 0.4rem;
+            text-align: center;
+            transition: all 0.3s ease;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
             cursor: default;
         }
+
         .balance-card:hover {
             transform: translateY(-4px);
             border-color: rgba(59, 130, 246, 0.10);
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
         }
+
         .balance-card .bal-label {
-            font-size: 0.55rem; text-transform: uppercase;
-            letter-spacing: 0.6px; font-weight: 600;
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            font-weight: 600;
             color: rgba(247, 244, 233, 0.3);
         }
+
         .balance-card .bal-value {
-            font-size: 1.6rem; font-weight: 800; margin-top: 2px;
-            line-height: 1.2; letter-spacing: -0.3px;
-            color: #F7F4E9; animation: pulseValue 2.5s ease-in-out infinite;
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-top: 2px;
+            line-height: 1.2;
+            letter-spacing: -0.3px;
+            color: #F7F4E9;
+            animation: pulseValue 2.5s ease-in-out infinite;
         }
+
         .balance-card .bal-sub {
-            font-size: 0.5rem; color: rgba(247, 244, 233, 0.15);
-            margin-top: 2px; min-height: 1.2rem;
+            font-size: 0.5rem;
+            color: rgba(247, 244, 233, 0.15);
+            margin-top: 2px;
+            min-height: 1.2rem;
         }
-        .balance-card.deposit .bal-value { color: #3b82f6; }
-        .balance-card.wallet .bal-value  { color: #93bbfc; }
-        .balance-card.total  .bal-value  { color: #F7F4E9; }
-        .balance-card.wealth .bal-value  { color: #3b82f6; }
-        .balance-card.wealth .bal-label  { color: #3b82f6; }
-        .balance-card.reserve .bal-value { color: #93bbfc; }
-        .balance-card.reserve .bal-label { color: #93bbfc; }
-        .balance-card.growth .bal-value  { color: #F7F4E9; }
-        .balance-card.growth .bal-label  { color: rgba(247, 244, 233, 0.5); }
-        .balance-card.clickable { cursor: pointer; }
-        .balance-card.clickable:hover { border-color: rgba(59, 130, 246, 0.15); }
+
+        .balance-card.deposit .bal-value {
+            color: #3b82f6;
+        }
+        .balance-card.wallet .bal-value {
+            color: #93bbfc;
+        }
+        .balance-card.total .bal-value {
+            color: #F7F4E9;
+        }
+
+        .balance-card.wealth .bal-value {
+            color: #3b82f6;
+        }
+        .balance-card.wealth .bal-label {
+            color: #3b82f6;
+        }
+        .balance-card.reserve .bal-value {
+            color: #93bbfc;
+        }
+        .balance-card.reserve .bal-label {
+            color: #93bbfc;
+        }
+        .balance-card.growth .bal-value {
+            color: #F7F4E9;
+        }
+        .balance-card.growth .bal-label {
+            color: rgba(247, 244, 233, 0.5);
+        }
+
+        .balance-card.clickable {
+            cursor: pointer;
+        }
+        .balance-card.clickable:hover {
+            border-color: rgba(59, 130, 246, 0.15);
+        }
 
         @keyframes pulseValue {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50%      { transform: scale(1.03); opacity: 0.85; }
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.03);
+                opacity: 0.85;
+            }
         }
 
+        /* ===== ACTION BUTTONS ===== */
         .action-buttons {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 0.8rem; margin-bottom: 0.8rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin-bottom: 0.8rem;
         }
+
         .action-btn {
-            padding: 0.85rem; border: none; border-radius: 16px;
-            font-family: inherit; font-weight: 600; font-size: 0.9rem;
-            cursor: pointer; transition: all 0.25s;
-            text-align: center; text-decoration: none;
-            display: flex; align-items: center; justify-content: center;
+            padding: 0.85rem;
+            border: none;
+            border-radius: 16px;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.25s;
+            text-align: center;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             gap: 8px;
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.04);
             color: rgba(247, 244, 233, 0.5);
             backdrop-filter: blur(6px);
         }
+
         .action-btn svg {
-            width: 20px; height: 20px; stroke: currentColor;
-            stroke-width: 2; fill: none;
-            stroke-linecap: round; stroke-linejoin: round;
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
+
         .action-btn.deposit {
             background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.03));
-            border-color: rgba(59, 130, 246, 0.10); color: #3b82f6;
+            border-color: rgba(59, 130, 246, 0.10);
+            color: #3b82f6;
         }
+
         .action-btn.deposit:hover {
             background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(59, 130, 246, 0.06));
             transform: translateY(-2px);
             box-shadow: 0 8px 24px rgba(59, 130, 246, 0.10);
         }
+
         .action-btn.withdraw {
             background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.02));
-            border-color: rgba(59, 130, 246, 0.08); color: #93bbfc;
+            border-color: rgba(59, 130, 246, 0.08);
+            color: #93bbfc;
         }
+
         .action-btn.withdraw:hover {
             background: linear-gradient(135deg, rgba(59, 130, 246, 0.20), rgba(59, 130, 246, 0.05));
             transform: translateY(-2px);
             box-shadow: 0 8px 24px rgba(59, 130, 246, 0.10);
         }
+
         .action-btn.secondary {
             background: rgba(255, 255, 255, 0.02);
             border-color: rgba(255, 255, 255, 0.03);
             color: rgba(247, 244, 233, 0.2);
         }
+
         .action-btn.secondary:hover {
             background: rgba(255, 255, 255, 0.04);
             border-color: rgba(255, 255, 255, 0.06);
-            transform: translateY(-2px); color: rgba(247, 244, 233, 0.5);
-        }
-        .action-row-secondary {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 0.8rem; margin-bottom: 0.5rem;
+            transform: translateY(-2px);
+            color: rgba(247, 244, 233, 0.5);
         }
 
+        .action-row-secondary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* ===== CUSTOMER SERVICE CARD ===== */
         .support-card {
             background: linear-gradient(135deg, rgba(59, 130, 246, 0.04), rgba(7, 28, 18, 0.30));
             border: 1px solid rgba(59, 130, 246, 0.06);
-            border-radius: 16px; padding: 1rem 1.2rem;
+            border-radius: 16px;
+            padding: 1rem 1.2rem;
             margin-bottom: 1.2rem;
-            display: flex; align-items: center; justify-content: space-between;
-            cursor: pointer; transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.25s ease;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
         }
+
         .support-card:hover {
             transform: translateY(-2px);
             border-color: rgba(59, 130, 246, 0.12);
             box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
         }
-        .support-card:active { transform: scale(0.98); }
-        .support-card .support-left { display: flex; align-items: center; gap: 12px; }
+
+        .support-card:active {
+            transform: scale(0.98);
+        }
+
+        .support-card .support-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
         .support-card .support-left .icon-wrap {
-            width: 40px; height: 40px; border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             background: rgba(59, 130, 246, 0.04);
             border: 1px solid rgba(59, 130, 246, 0.06);
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             flex-shrink: 0;
         }
+
         .support-card .support-left .icon-wrap svg {
-            width: 20px; height: 20px; stroke: #3b82f6;
-            stroke-width: 2; fill: none;
-            stroke-linecap: round; stroke-linejoin: round;
-        }
-        .support-card .support-left .support-text .title {
-            font-size: 0.85rem; font-weight: 700; color: #F7F4E9;
-        }
-        .support-card .support-left .support-text .desc {
-            font-size: 0.65rem; color: rgba(247, 244, 233, 0.15);
-        }
-        .support-card .support-arrow {
-            color: rgba(59, 130, 246, 0.15); font-size: 1.2rem;
+            width: 20px;
+            height: 20px;
+            stroke: #3b82f6;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
 
-        .savings-section { margin-top: 0.6rem; margin-bottom: 0.8rem; }
+        .support-card .support-left .support-text .title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #F7F4E9;
+        }
+
+        .support-card .support-left .support-text .desc {
+            font-size: 0.65rem;
+            color: rgba(247, 244, 233, 0.15);
+        }
+
+        .support-card .support-arrow {
+            color: rgba(59, 130, 246, 0.15);
+            font-size: 1.2rem;
+        }
+
+        /* ===== SAVINGS SECTION ===== */
+        .savings-section {
+            margin-top: 0.6rem;
+            margin-bottom: 0.8rem;
+        }
+
         .savings-header {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 0 0.2rem 0.6rem 0.2rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            cursor: pointer; transition: 0.2s;
-        }
-        .savings-header:hover { opacity: 0.8; }
-        .savings-header .title {
-            font-size: 0.75rem; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.8px;
-            color: rgba(247, 244, 233, 0.25);
-        }
-        .savings-header .total {
-            font-size: 1.3rem; font-weight: 800;
-            color: #F7F4E9; letter-spacing: -0.3px;
-        }
-        .savings-header .total .currency {
-            font-size: 0.9rem; color: rgba(247, 244, 233, 0.2);
-            margin-right: 2px;
-        }
-        .savings-row { margin-bottom: 0.2rem; }
-        .savings-history-link {
-            display: inline-flex; align-items: center; gap: 6px;
-            margin-top: 0.4rem; font-size: 0.7rem; font-weight: 600;
-            color: rgba(247, 244, 233, 0.15); cursor: pointer;
-            transition: 0.2s; border: none; background: transparent;
-            font-family: inherit; padding: 4px 0;
-        }
-        .savings-history-link:hover { color: rgba(247, 244, 233, 0.4); }
-        .savings-history-link svg {
-            width: 16px; height: 16px; stroke: currentColor;
-            stroke-width: 2; fill: none;
-            stroke-linecap: round; stroke-linejoin: round;
+            cursor: pointer;
+            transition: 0.2s;
         }
 
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(7, 28, 18, 0.80);
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 1000; visibility: hidden; opacity: 0;
-            transition: all 0.3s ease; padding: 1.5rem;
+        .savings-header:hover {
+            opacity: 0.8;
         }
-        .modal-overlay.active { visibility: visible; opacity: 1; }
+
+        .savings-header .title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: rgba(247, 244, 233, 0.25);
+        }
+
+        .savings-header .total {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #F7F4E9;
+            letter-spacing: -0.3px;
+        }
+
+        .savings-header .total .currency {
+            font-size: 0.9rem;
+            color: rgba(247, 244, 233, 0.2);
+            margin-right: 2px;
+        }
+
+        .savings-row {
+            margin-bottom: 0.2rem;
+        }
+
+        .savings-history-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 0.4rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: rgba(247, 244, 233, 0.15);
+            cursor: pointer;
+            transition: 0.2s;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+            padding: 4px 0;
+        }
+
+        .savings-history-link:hover {
+            color: rgba(247, 244, 233, 0.4);
+        }
+
+        .savings-history-link svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(7, 28, 18, 0.80);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+            padding: 1.5rem;
+        }
+
+        .modal-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
         .modal-card {
             background: rgba(7, 28, 18, 0.88);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(59, 130, 246, 0.06);
-            border-radius: 24px; padding: 2rem 1.8rem;
-            max-width: 420px; width: 100%;
+            border-radius: 24px;
+            padding: 2rem 1.8rem;
+            max-width: 420px;
+            width: 100%;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            position: relative; max-height: 80vh; overflow-y: auto;
+            position: relative;
+            max-height: 80vh;
+            overflow-y: auto;
         }
+
         .modal-card .modal-close {
-            position: absolute; top: 14px; right: 18px;
-            background: none; border: none;
-            color: rgba(247, 244, 233, 0.2); font-size: 1.5rem;
-            cursor: pointer; transition: 0.2s;
+            position: absolute;
+            top: 14px;
+            right: 18px;
+            background: none;
+            border: none;
+            color: rgba(247, 244, 233, 0.2);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: 0.2s;
         }
-        .modal-card .modal-close:hover { color: #F7F4E9; }
+        .modal-card .modal-close:hover {
+            color: #F7F4E9;
+        }
+
         .modal-card h3 {
-            font-size: 1.3rem; font-weight: 700;
-            color: #F7F4E9; text-align: center; margin-bottom: 1.2rem;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #F7F4E9;
+            text-align: center;
+            margin-bottom: 1.2rem;
         }
-        .modal-card .form-group { margin-bottom: 0.8rem; }
+
+        .modal-card .form-group {
+            margin-bottom: 0.8rem;
+        }
+
         .modal-card .form-group label {
-            display: block; font-size: 0.7rem; font-weight: 600;
-            color: rgba(247, 244, 233, 0.25); margin-bottom: 0.2rem;
-            text-transform: uppercase; letter-spacing: 0.5px;
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: rgba(247, 244, 233, 0.25);
+            margin-bottom: 0.2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
+
         .modal-card .form-group input {
-            width: 100%; padding: 0.7rem 1rem; border-radius: 12px;
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.04);
             background: rgba(255, 255, 255, 0.02);
-            color: #F7F4E9; font-size: 0.9rem; font-family: inherit;
-            transition: all 0.2s; outline: none;
+            color: #F7F4E9;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: all 0.2s;
+            outline: none;
         }
+
         .modal-card .form-group input:focus {
             border-color: rgba(59, 130, 246, 0.15);
             background: rgba(255, 255, 255, 0.04);
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.02);
         }
-        .modal-card .form-group input::placeholder { color: rgba(247, 244, 233, 0.08); }
-        .modal-card .form-group input[readonly] { opacity: 0.5; cursor: not-allowed; }
+
+        .modal-card .form-group input::placeholder {
+            color: rgba(247, 244, 233, 0.08);
+        }
+
+        .modal-card .form-group input[readonly] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .modal-card .btn-primary {
-            width: 100%; padding: 0.8rem; border: none; border-radius: 12px;
-            font-family: inherit; font-weight: 700; font-size: 0.95rem;
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.95rem;
             color: #071C12;
             background: linear-gradient(135deg, #3b82f6, #2563eb);
-            cursor: pointer; transition: all 0.2s;
+            cursor: pointer;
+            transition: all 0.2s;
             margin-top: 0.3rem;
             box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
         }
+
         .modal-card .btn-primary:hover {
             background: linear-gradient(135deg, #60a5fa, #3b82f6);
             transform: translateY(-2px);
             box-shadow: 0 8px 24px rgba(59, 130, 246, 0.20);
         }
-        .modal-card .btn-primary:active { transform: scale(0.98); }
-        .modal-card .btn-secondary {
-            width: 100%; padding: 0.7rem;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 12px; background: transparent;
-            color: rgba(247, 244, 233, 0.2);
-            font-family: inherit; font-weight: 600; font-size: 0.9rem;
-            cursor: pointer; transition: all 0.2s; margin-top: 0.5rem;
+        .modal-card .btn-primary:active {
+            transform: scale(0.98);
         }
+
+        .modal-card .btn-secondary {
+            width: 100%;
+            padding: 0.7rem;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            background: transparent;
+            color: rgba(247, 244, 233, 0.2);
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+        }
+
         .modal-card .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.03);
             border-color: rgba(255, 255, 255, 0.08);
             color: #F7F4E9;
         }
+
         .modal-card .forgot-link {
-            text-align: center; margin-top: 0.6rem;
-            font-size: 0.8rem; color: #3b82f6;
-            cursor: pointer; transition: color 0.2s;
+            text-align: center;
+            margin-top: 0.6rem;
+            font-size: 0.8rem;
+            color: #3b82f6;
+            cursor: pointer;
+            transition: color 0.2s;
         }
-        .modal-card .forgot-link:hover { color: #93bbfc; text-decoration: underline; }
+
+        .modal-card .forgot-link:hover {
+            color: #93bbfc;
+            text-decoration: underline;
+        }
+
         .modal-card .msg {
-            font-size: 0.85rem; text-align: center;
-            margin-top: 0.8rem; padding: 0.5rem; border-radius: 12px;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: 0.8rem;
+            padding: 0.5rem;
+            border-radius: 12px;
         }
+
         .modal-card .msg.error {
-            color: #f87171; background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
+            background: rgba(239, 68, 68, 0.08);
             border: 1px solid rgba(239, 68, 68, 0.10);
         }
+
         .modal-card .msg.success {
-            color: #6ee7b7; background: rgba(52, 211, 153, 0.08);
+            color: #6ee7b7;
+            background: rgba(52, 211, 153, 0.08);
             border: 1px solid rgba(52, 211, 153, 0.10);
         }
 
+        /* ===== BOTTOM NAV ===== */
         .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
             background: rgba(7, 28, 18, 0.80);
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border-top: 1px solid rgba(59, 130, 246, 0.04);
-            display: flex; justify-content: space-around; align-items: center;
-            padding: 6px 4px 14px; z-index: 30;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 6px 4px 14px;
+            z-index: 30;
             box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.3);
             will-change: transform;
         }
+
         .nav-item {
-            display: flex; flex-direction: column; align-items: center; gap: 2px;
-            cursor: pointer; transition: all 0.3s; flex: 1;
-            text-align: center; padding: 4px 2px; border-radius: 16px;
-            border: none; background: transparent; font-family: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            text-align: center;
+            padding: 4px 2px;
+            border-radius: 16px;
+            border: none;
+            background: transparent;
+            font-family: inherit;
             color: rgba(247, 244, 233, 0.10);
         }
+
         .nav-item .nav-icon {
-            width: 24px; height: 24px; stroke: currentColor;
-            stroke-width: 1.8; fill: none;
-            stroke-linecap: round; stroke-linejoin: round;
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
             transition: all 0.3s;
         }
-        .nav-item.active .nav-icon { stroke: #3b82f6; transform: scale(1.05); }
-        .nav-item .nav-label {
-            font-size: 0.45rem; font-weight: 600;
-            color: rgba(247, 244, 233, 0.10);
-            transition: 0.3s; letter-spacing: 0.3px;
+
+        .nav-item.active .nav-icon {
+            stroke: #3b82f6;
+            transform: scale(1.05);
         }
-        .nav-item.active .nav-label { color: #3b82f6; }
-        .nav-item:hover .nav-icon { stroke: #3b82f6; }
+
+        .nav-item .nav-label {
+            font-size: 0.45rem;
+            font-weight: 600;
+            color: rgba(247, 244, 233, 0.10);
+            transition: 0.3s;
+            letter-spacing: 0.3px;
+        }
+
+        .nav-item.active .nav-label {
+            color: #3b82f6;
+        }
+
+        .nav-item:hover .nav-icon {
+            stroke: #3b82f6;
+        }
+
         .nav-item.marketplace .nav-icon {
-            width: 32px; height: 32px; stroke-width: 2;
+            width: 32px;
+            height: 32px;
+            stroke-width: 2;
             background: linear-gradient(135deg, #1d4ed8, #3b82f6);
-            border-radius: 50%; padding: 4px; stroke: #F7F4E9;
+            border-radius: 50%;
+            padding: 4px;
+            stroke: #F7F4E9;
             margin-bottom: 2px;
         }
+
         .nav-item.marketplace.active .nav-icon {
             transform: scale(1.1);
             box-shadow: 0 0 30px rgba(59, 130, 246, 0.08);
         }
+
         .nav-item.marketplace .nav-label {
-            color: rgba(59, 130, 246, 0.20); font-weight: 700;
+            color: rgba(59, 130, 246, 0.20);
+            font-weight: 700;
         }
 
+        /* ===== TOAST ===== */
         .toast {
-            position: fixed; bottom: 100px; left: 50%;
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
             transform: translateX(-50%);
             background: rgba(7, 28, 18, 0.92);
             backdrop-filter: blur(8px);
-            padding: 12px 24px; border-radius: 40px;
-            font-weight: 600; font-size: 0.85rem;
-            z-index: 1001; animation: toastFade 4.5s ease forwards;
-            max-width: 90%; text-align: center; color: #F7F4E9;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            z-index: 1001;
+            animation: toastFade 4.5s ease forwards;
+            max-width: 90%;
+            text-align: center;
+            color: #F7F4E9;
             border: 1px solid rgba(255, 255, 255, 0.03);
         }
-        .toast.error { border-color: rgba(239, 68, 68, 0.12); color: #fca5a5; }
-        .toast.success { border-color: rgba(59, 130, 246, 0.12); color: #93bbfc; }
-        @keyframes toastFade {
-            0%   { opacity: 0; transform: translateX(-50%) translateY(20px) scale(0.95); }
-            15%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-            80%  { opacity: 1; }
-            100% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.95); }
+
+        .toast.error {
+            border-color: rgba(239, 68, 68, 0.12);
+            color: #fca5a5;
+        }
+        .toast.success {
+            border-color: rgba(59, 130, 246, 0.12);
+            color: #93bbfc;
         }
 
+        @keyframes toastFade {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px) scale(0.95);
+            }
+            15% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0) scale(1);
+            }
+            80% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px) scale(0.95);
+            }
+        }
+
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 500px) {
-            .header { padding: 0.6rem 1rem; }
-            .logo-text { font-size: 1.2rem; }
-            .menu-panel { width: 280px; right: -300px; padding: 1.5rem; }
-            .container { padding: 0 0.8rem; }
-            .profile-card { padding: 1.5rem 1.2rem; }
-            .profile-card .avatar { width: 80px; height: 80px; }
-            .profile-card .avatar .avatar-letter { font-size: 2.2rem; }
-            .profile-card .name { font-size: 1.3rem; }
-            .balance-card .bal-value { font-size: 1.3rem; }
-            .savings-header .total { font-size: 1.1rem; }
-            .action-btn { font-size: 0.8rem; padding: 0.7rem; }
-            .action-btn svg { width: 18px; height: 18px; }
-            .nav-item .nav-icon { width: 22px; height: 22px; }
-            .nav-item.marketplace .nav-icon { width: 30px; height: 30px; }
-            .modal-card { padding: 1.5rem 1.2rem; }
-            .support-card { padding: 0.8rem 1rem; }
+            .header {
+                padding: 0.6rem 1rem;
+            }
+            .logo-text {
+                font-size: 1.2rem;
+            }
+            .menu-panel {
+                width: 280px;
+                right: -300px;
+                padding: 1.5rem;
+            }
+            .container {
+                padding: 0 0.8rem;
+            }
+            .profile-card {
+                padding: 1.5rem 1.2rem;
+            }
+            .profile-card .avatar {
+                width: 80px;
+                height: 80px;
+            }
+            .profile-card .avatar .avatar-letter {
+                font-size: 2.2rem;
+            }
+            .profile-card .name {
+                font-size: 1.3rem;
+            }
+            .balance-card .bal-value {
+                font-size: 1.3rem;
+            }
+            .savings-header .total {
+                font-size: 1.1rem;
+            }
+            .action-btn {
+                font-size: 0.8rem;
+                padding: 0.7rem;
+            }
+            .action-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+            .nav-item .nav-icon {
+                width: 22px;
+                height: 22px;
+            }
+            .nav-item.marketplace .nav-icon {
+                width: 30px;
+                height: 30px;
+            }
+            .modal-card {
+                padding: 1.5rem 1.2rem;
+            }
+            .support-card {
+                padding: 0.8rem 1rem;
+            }
         }
+
         @media (max-width: 400px) {
-            .profile-card .avatar { width: 68px; height: 68px; }
-            .profile-card .avatar .avatar-letter { font-size: 1.8rem; }
-            .balance-card .bal-value { font-size: 1.1rem; }
-            .action-buttons { gap: 0.5rem; }
-            .action-row-secondary { gap: 0.5rem; }
+            .profile-card .avatar {
+                width: 68px;
+                height: 68px;
+            }
+            .profile-card .avatar .avatar-letter {
+                font-size: 1.8rem;
+            }
+            .balance-card .bal-value {
+                font-size: 1.1rem;
+            }
+            .action-buttons {
+                gap: 0.5rem;
+            }
+            .action-row-secondary {
+                gap: 0.5rem;
+            }
         }
+
         @media (max-width: 480px) {
-            .hero-bg::before { filter: blur(4px) brightness(0.3) saturate(0.8); }
-            .header { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-            .profile-card { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-            .balance-card { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
-            .bottom-nav { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-            .modal-overlay { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
-            .menu-panel { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+            .hero-bg::before {
+                filter: blur(4px) brightness(0.3) saturate(0.8);
+            }
+            .header {
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+            }
+            .profile-card {
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            }
+            .balance-card {
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+            }
+            .bottom-nav {
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+            }
+            .modal-overlay {
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+            }
+            .menu-panel {
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            }
         }
     </style>
 </head>
@@ -791,16 +1351,14 @@
         auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(console.warn);
 
         // ================================================================
-        // HELPERS  (SAFE NUMERIC COERCION — NEW)
+        // HELPERS
         // ================================================================
         function escapeHtml(str) {
             if (!str) return '';
-            return String(str).replace(/[&<>"']/g, function(m) {
+            return str.replace(/[&<>]/g, function(m) {
                 if (m === '&') return '&amp;';
                 if (m === '<') return '&lt;';
                 if (m === '>') return '&gt;';
-                if (m === '"') return '&quot;';
-                if (m === "'") return '&#39;';
                 return m;
             });
         }
@@ -815,27 +1373,8 @@
             setTimeout(function() { if (toast.parentNode) toast.remove(); }, 4000);
         }
 
-        // ⭐ SAFE: never throws, never returns NaN
-        function toNum(v, fallback) {
-            if (v === null || v === undefined) return fallback || 0;
-            if (typeof v === 'number') return isFinite(v) ? v : (fallback || 0);
-            if (typeof v === 'string') {
-                var n = parseFloat(v.replace(/[^0-9.\-]/g, ''));
-                return isFinite(n) ? n : (fallback || 0);
-            }
-            if (typeof v === 'object' && typeof v.toNumber === 'function') {
-                try { return v.toNumber(); } catch (e) { return fallback || 0; }
-            }
-            return fallback || 0;
-        }
-
-        function round2(n) {
-            return Math.round((n + Number.EPSILON) * 100) / 100;
-        }
-
-        // ⭐ SAFE formatCurrency (was crashing on strings/undefined)
         function formatCurrency(amount) {
-            return toNum(amount, 0).toFixed(2);
+            return amount.toFixed(2);
         }
 
         // ================================================================
@@ -886,21 +1425,21 @@
                 .where('userId', '==', userId)
                 .onSnapshot(function(snap) {
                     var available = { wealth: 0, reserve: 0, growth: 0 };
-                    var pending   = { wealth: 0, reserve: 0, growth: 0 };
+                    var pending = { wealth: 0, reserve: 0, growth: 0 };
 
                     snap.forEach(function(doc) {
                         var d = doc.data();
                         var branch = d.branch || 'wealth';
                         if (available[branch] === undefined) return;
 
-                        var amt = toNum(d.amount, 0);  // ⭐ SAFE
+                        var amt = Number(d.amount || 0);
                         if (d.type === 'saving_deposit' && d.status === 'approved') {
                             available[branch] += amt;
                         } else if (d.type === 'saving_withdrawal' && d.status === 'approved') {
                             available[branch] -= amt;
                         } else if (d.type === 'saving_withdrawal' && d.status === 'pending') {
                             available[branch] -= amt;
-                            pending[branch]   += amt;
+                            pending[branch] += amt;
                         }
                     });
 
@@ -911,28 +1450,30 @@
                     updateSavingsUI(available, pending);
                 }, function(err) {
                     console.warn('Savings listener error:', err);
-                    updateSavingsUI(
-                        { wealth: 0, reserve: 0, growth: 0 },
-                        { wealth: 0, reserve: 0, growth: 0 }
-                    );
+                    updateSavingsUI({ wealth: 0, reserve: 0, growth: 0 }, { wealth: 0, reserve: 0, growth: 0 });
                 });
         }
 
         function updateSavingsUI(approved, pending) {
-            var total = round2(approved.wealth + approved.reserve + approved.growth);
+            var total = approved.wealth + approved.reserve + approved.growth;
 
-            document.getElementById('totalSavings').textContent   = formatCurrency(total);
-            document.getElementById('wealthBalance').textContent  = formatCurrency(approved.wealth);
+            document.getElementById('totalSavings').textContent = formatCurrency(total);
+
+            document.getElementById('wealthBalance').textContent = formatCurrency(approved.wealth);
             document.getElementById('reserveBalance').textContent = formatCurrency(approved.reserve);
-            document.getElementById('growthBalance').textContent  = formatCurrency(approved.growth);
+            document.getElementById('growthBalance').textContent = formatCurrency(approved.growth);
 
-            document.getElementById('wealthPending').textContent  = pending.wealth  > 0 ? '⏳ Pending: K' + formatCurrency(pending.wealth)  : '';
-            document.getElementById('reservePending').textContent = pending.reserve > 0 ? '⏳ Pending: K' + formatCurrency(pending.reserve) : '';
-            document.getElementById('growthPending').textContent  = pending.growth  > 0 ? '⏳ Pending: K' + formatCurrency(pending.growth)  : '';
+            var wealthPending = pending.wealth > 0 ? '⏳ Pending: K' + formatCurrency(pending.wealth) : '';
+            var reservePending = pending.reserve > 0 ? '⏳ Pending: K' + formatCurrency(pending.reserve) : '';
+            var growthPending = pending.growth > 0 ? '⏳ Pending: K' + formatCurrency(pending.growth) : '';
+
+            document.getElementById('wealthPending').textContent = wealthPending;
+            document.getElementById('reservePending').textContent = reservePending;
+            document.getElementById('growthPending').textContent = growthPending;
         }
 
         // ================================================================
-        // AUTH STATE  (with safe balance reconciliation)
+        // AUTH STATE
         // ================================================================
         let authResolved = false;
         let redirectTimeout = null;
@@ -940,95 +1481,78 @@
         auth.onAuthStateChanged(function(user) {
             if (user) {
                 authResolved = true;
-                if (redirectTimeout) { clearTimeout(redirectTimeout); redirectTimeout = null; }
-
+                if (redirectTimeout) {
+                    clearTimeout(redirectTimeout);
+                    redirectTimeout = null;
+                }
                 watchBlockStatus(user.uid);
                 watchSavings(user.uid);
 
                 db.collection('users').doc(user.uid).onSnapshot(function(doc) {
-                    if (!doc.exists) return;
-                    var data = doc.data();
+                    if (doc.exists) {
+                        var data = doc.data();
 
-                    // ---------- Identity ----------
-                    var fullName = data.fullName || 'User';
-                    var email    = data.email || user.email;
+                        var fullName = data.fullName || 'User';
+                        var email = data.email || user.email;
 
-                    document.getElementById('userName').textContent  = escapeHtml(fullName);
-                    document.getElementById('userEmail').textContent = escapeHtml(email);
-                    document.getElementById('modalEmail').value      = email;
+                        document.getElementById('userName').textContent = escapeHtml(fullName);
+                        document.getElementById('userEmail').textContent = escapeHtml(email);
+                        document.getElementById('modalEmail').value = email;
 
-                    var firstLetter = (String(fullName).charAt(0) || 'U').toUpperCase();
-                    document.getElementById('avatarLetter').textContent = firstLetter;
+                        var firstLetter = fullName.charAt(0).toUpperCase();
+                        document.getElementById('avatarLetter').textContent = firstLetter;
 
-                    // ---------- Balances (all safely coerced) ----------
-                    var deposit     = toNum(data.depositBalance, 0);
-                    var wallet      = toNum(data.walletBalance, 0);
-                    var mainBalance = toNum(data.balance, 0);
-                    var activity    = toNum(data.activityBalance, 0);
+                        // ----------------------------------------------------
+                        // BALANCE READING & SELF-HEALING FIX
+                        // ----------------------------------------------------
+                        var deposit     = Number(data.depositBalance)  || 0;
+                        var wallet      = Number(data.walletBalance)   || 0; 
+                        var mainBalance = Number(data.balance)         || 0;
+                        var activity    = Number(data.activityBalance) || 0;
 
-                    // ----------------------------------------------------
-                    // ONE-TIME PER-SESSION RECONCILE
-                    // ----------------------------------------------------
-                    // income.html credits `balance`. Profile shows
-                    // `walletBalance`. If they've drifted, sync ONCE per
-                    // browser session — never on every snapshot (that
-                    // caused write loops + DB spam).
-                    //
-                    // NOTE: This is a compatibility shim. The permanent
-                    // fix is for income.html to credit BOTH fields
-                    // atomically (see companion patch).
-                    // ----------------------------------------------------
-                    var syncKey   = 'walletSyncDone_' + user.uid;
-                    var needsSync = (mainBalance > wallet) && !sessionStorage.getItem(syncKey);
-
-                    if (needsSync) {
-                        sessionStorage.setItem(syncKey, '1'); // set BEFORE write
-                        console.log('🔄 Reconciling walletBalance → ' + mainBalance);
-
-                        db.collection('users').doc(user.uid).set({
-                            walletBalance: mainBalance,
-                            walletBalanceUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                            walletBalanceSyncedFrom: 'balance'
-                        }, { merge: true }).catch(function(err) {
-                            console.warn('⚠️ Wallet reconcile failed:', err && err.message);
-                            sessionStorage.removeItem(syncKey); // allow retry
-                        });
-
-                        wallet = mainBalance; // reflect immediately in UI
-                    }
-
-                    // ---------- Display ----------
-                    var displayDeposit = round2(deposit);
-                    var displayWallet  = round2(wallet);
-                    var total          = round2(deposit + wallet + activity);
-
-                    document.getElementById('depositBalance').textContent = displayDeposit.toFixed(2);
-                    document.getElementById('walletBalance').textContent  = displayWallet.toFixed(2);
-                    document.getElementById('totalBalance').textContent   = total.toFixed(2);
-
-                    console.log('[Profile] balances', {
-                        raw: {
-                            depositBalance:  data.depositBalance,
-                            walletBalance:   data.walletBalance,
-                            balance:         data.balance,
-                            activityBalance: data.activityBalance
-                        },
-                        parsed: {
-                            deposit:  displayDeposit,
-                            wallet:   displayWallet,
-                            activity: round2(activity),
-                            total:    total
+                        // SELF-HEALING: If the old balance field is higher than the wallet balance,
+                        // automatically sync them in the database. This fixes the 0.40 vs 7.30 issue
+                        // without needing manual Firebase Console edits.
+                        if (mainBalance > wallet) {
+                            console.log("🔄 Auto-syncing: balance > walletBalance. Fixing database...");
+                            db.collection('users').doc(user.uid).update({
+                                walletBalance: mainBalance
+                            }).then(function() {
+                                console.log("✅ Database auto-synced to:", mainBalance);
+                            }).catch(function(err) {
+                                console.warn("⚠️ Auto-sync failed:", err);
+                            });
+                            // Immediately use the correct value for the UI so it shows 7.30 right away
+                            wallet = mainBalance;
                         }
-                    });
+
+                        var displayWallet = wallet; 
+                        var total = deposit + displayWallet;
+
+                        document.getElementById('depositBalance').textContent = deposit.toFixed(2);
+                        document.getElementById('walletBalance').textContent = displayWallet.toFixed(2);
+                        document.getElementById('totalBalance').textContent = total.toFixed(2);
+
+                        // Debug helper
+                        console.log('[Profile] user doc updated:', {
+                            depositBalance: data.depositBalance,
+                            walletBalance: data.walletBalance,
+                            balance: data.balance,
+                            activityBalance: data.activityBalance,
+                            computedWallet: displayWallet,
+                            computedTotal: total
+                        });
+                    }
                 }, function(err) {
                     console.warn('Profile listener error:', err);
                 });
-
             } else {
                 if (!authResolved) {
                     if (!redirectTimeout) {
                         redirectTimeout = setTimeout(function() {
-                            if (!auth.currentUser) window.location.href = 'login.html';
+                            if (!auth.currentUser) {
+                                window.location.href = 'login.html';
+                            }
                         }, 2000);
                     }
                 } else {
@@ -1044,7 +1568,7 @@
         // ONLINE / OFFLINE TOGGLE
         // ================================================================
         var isOnline = true;
-        var statusDot  = document.getElementById('statusDot');
+        var statusDot = document.getElementById('statusDot');
         var statusText = document.getElementById('statusText');
 
         function updateStatus() {
@@ -1055,13 +1579,11 @@
                 statusDot.className = 'dot offline';
                 statusText.textContent = 'Offline';
             }
-            try { localStorage.setItem('userOnline', isOnline); } catch (e) {}
+            localStorage.setItem('userOnline', isOnline);
         }
 
-        try {
-            var saved = localStorage.getItem('userOnline');
-            if (saved !== null) isOnline = saved === 'true';
-        } catch (e) {}
+        var saved = localStorage.getItem('userOnline');
+        if (saved !== null) isOnline = saved === 'true';
         updateStatus();
 
         document.getElementById('onlineToggle').addEventListener('click', function() {
@@ -1072,18 +1594,23 @@
         // ================================================================
         // SAVINGS CLICK HANDLERS
         // ================================================================
+
         document.getElementById('savingsHeader').addEventListener('click', function() {
             window.location.href = 'saving.html';
         });
+
         document.getElementById('wealthCard').addEventListener('click', function() {
             window.location.href = 'wealth.html';
         });
+
         document.getElementById('reserveCard').addEventListener('click', function() {
             window.location.href = 'reserve.html';
         });
+
         document.getElementById('growthCard').addEventListener('click', function() {
             window.location.href = 'growth.html';
         });
+
         document.getElementById('savingsHistoryBtn').addEventListener('click', function() {
             window.location.href = 'history.html?filter=savings';
         });
@@ -1091,16 +1618,16 @@
         // ================================================================
         // PASSWORD MODAL
         // ================================================================
-        var modal          = document.getElementById('passwordModal');
-        var changePwdBtn   = document.getElementById('changePasswordBtn');
-        var closeModalBtn  = document.getElementById('closeModalBtn');
+        var modal = document.getElementById('passwordModal');
+        var changePwdBtn = document.getElementById('changePasswordBtn');
+        var closeModalBtn = document.getElementById('closeModalBtn');
         var cancelModalBtn = document.getElementById('cancelModalBtn');
-        var forgotLink     = document.getElementById('forgotPasswordLink');
-        var modalMessage   = document.getElementById('modalMessage');
+        var forgotLink = document.getElementById('forgotPasswordLink');
+        var modalMessage = document.getElementById('modalMessage');
 
         function openModal() {
             modal.classList.add('active');
-            modalMessage.textContent = '';
+            modalMessage.innerHTML = '';
             modalMessage.className = 'msg';
             document.getElementById('oldPassword').value = '';
             document.getElementById('newPassword').value = '';
@@ -1109,7 +1636,9 @@
 
         changePwdBtn.addEventListener('click', openModal);
 
-        function closeModal() { modal.classList.remove('active'); }
+        function closeModal() {
+            modal.classList.remove('active');
+        }
 
         closeModalBtn.addEventListener('click', closeModal);
         cancelModalBtn.addEventListener('click', closeModal);
@@ -1119,29 +1648,29 @@
 
         forgotLink.addEventListener('click', function() {
             modalMessage.className = 'msg';
-            modalMessage.textContent = '📞 Contact admin: +260 95 135 9357 (Manager) for account recovery.';
+            modalMessage.innerHTML = '📞 Contact admin: +260 95 135 9357 (Manager) for account recovery.';
         });
 
         document.getElementById('submitPasswordChange').addEventListener('click', async function() {
-            var email      = document.getElementById('modalEmail').value;
-            var oldPwd     = document.getElementById('oldPassword').value;
-            var newPwd     = document.getElementById('newPassword').value;
+            var email = document.getElementById('modalEmail').value;
+            var oldPwd = document.getElementById('oldPassword').value;
+            var newPwd = document.getElementById('newPassword').value;
             var confirmPwd = document.getElementById('confirmPassword').value;
-            var user       = auth.currentUser;
+            var user = auth.currentUser;
 
             if (!user || user.email !== email) {
                 modalMessage.className = 'msg error';
-                modalMessage.textContent = 'Email does not match logged-in account.';
+                modalMessage.innerHTML = 'Email does not match logged-in account.';
                 return;
             }
             if (newPwd.length < 6) {
                 modalMessage.className = 'msg error';
-                modalMessage.textContent = 'New password must be at least 6 characters.';
+                modalMessage.innerHTML = 'New password must be at least 6 characters.';
                 return;
             }
             if (newPwd !== confirmPwd) {
                 modalMessage.className = 'msg error';
-                modalMessage.textContent = 'New passwords do not match.';
+                modalMessage.innerHTML = 'New passwords do not match.';
                 return;
             }
 
@@ -1150,7 +1679,7 @@
                 await user.reauthenticateWithCredential(credential);
                 await user.updatePassword(newPwd);
                 modalMessage.className = 'msg success';
-                modalMessage.textContent = '✅ Password changed successfully! You will be logged out.';
+                modalMessage.innerHTML = '✅ Password changed successfully! You will be logged out.';
                 setTimeout(async function() {
                     await auth.signOut();
                     await new Promise(r => setTimeout(r, 300));
@@ -1160,7 +1689,7 @@
                 var msg = err.message;
                 if (err.code === 'auth/wrong-password') msg = 'Old password is incorrect.';
                 modalMessage.className = 'msg error';
-                modalMessage.textContent = msg;  // ⭐ textContent not innerHTML (XSS-safe)
+                modalMessage.innerHTML = escapeHtml(msg);
             }
         });
 
@@ -1209,38 +1738,8 @@
             });
         });
 
-        // ================================================================
-        // MANUAL AUDIT TOOL
-        // ----------------------------------------------------------------
-        // Run in browser console:
-        //     auditWallet('USER_UID')
-        // Shows every field that could hold a balance, so support can
-        // immediately see which one is stale for a given user.
-        // ================================================================
-        window.auditWallet = async function(uid) {
-            var snap = await db.collection('users').doc(uid).get();
-            if (!snap.exists) { console.warn('No user doc'); return null; }
-            var d = snap.data();
-            var report = {
-                uid: uid,
-                depositBalance:  d.depositBalance,
-                walletBalance:   d.walletBalance,
-                balance:         d.balance,
-                activityBalance: d.activityBalance,
-                _parsed: {
-                    deposit:  toNum(d.depositBalance, 0),
-                    wallet:   toNum(d.walletBalance, 0),
-                    balance:  toNum(d.balance, 0),
-                    activity: toNum(d.activityBalance, 0)
-                }
-            };
-            console.table(report);
-            return report;
-        };
-
         console.log('✅ Profile page · Sajvera Capital · Blue blur theme');
-        console.log('🩹 Safe reconcile enabled (once per session, no write loops).');
-        console.log('ℹ️  Run auditWallet("USER_UID") in console to inspect any user.');
+        console.log('🩹 Self-healing enabled: auto-syncs walletBalance if out of date.');
     </script>
 
 </body>
